@@ -164,7 +164,26 @@ async def process_image(file: UploadFile = File(...)):
         }
         
         headers = {"Content-Type": "application/json"}
-        response = requests.post(FUSION_WEBHOOK_URL, data=json.dumps(payload), headers=headers)
+        
+        # Configure retry strategy
+        from requests.adapters import HTTPAdapter
+        from urllib3.util.retry import Retry
+        
+        session = requests.Session()
+        retry_strategy = Retry(
+            total=3,
+            status_forcelist=[429, 500, 502, 503, 504],
+            allowed_methods=["POST"],
+            backoff_factor=1
+        )
+        adapter = HTTPAdapter(max_retries=retry_strategy)
+        session.mount("https://", adapter)
+        session.mount("http://", adapter)
+        
+        try:
+            response = session.post(FUSION_WEBHOOK_URL, data=json.dumps(payload), headers=headers, timeout=60)
+        except requests.exceptions.RequestException as e:
+            return {"error": f"Fusion Server Connection Error: {str(e)}"}
         
         if response.status_code in [200, 201]:
             try:
