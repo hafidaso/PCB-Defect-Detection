@@ -18,6 +18,7 @@ const PCBScanDashboard = () => {
   const canvasRef = useRef(null);
   const detectionInterval = useRef(null);
   const wsRef = useRef(null);
+  const isProcessingRef = useRef(false);
 
   // Upload image manually
   const handleImageUpload = (e) => {
@@ -79,13 +80,15 @@ const PCBScanDashboard = () => {
       setIsCameraActive(true);
       
       // Initialiser la connexion WebSocket
+      isProcessingRef.current = false;
       const API_URL = import.meta.env.VITE_API_URL || "http://localhost:8000";
       const wsUrl = API_URL.replace(/^http/, 'ws') + "/ws/detect-box";
       wsRef.current = new WebSocket(wsUrl);
       
       wsRef.current.onmessage = (event) => {
         const data = JSON.parse(event.data);
-        if (data.detected) {
+        if (data.detected && !isProcessingRef.current) {
+          isProcessingRef.current = true;
           // Si le backend détecte un PCB, capturer manuellement l'image et stopper
           captureFrame(true);
         }
@@ -175,6 +178,7 @@ const PCBScanDashboard = () => {
 
   // Send image to backend
   const processImage = async (fileToProcess) => {
+    if (loading) return; // Empêcher les appels multiples
     const file = fileToProcess || imageFile;
     if (!file) return;
     
@@ -211,6 +215,7 @@ const PCBScanDashboard = () => {
       setOcrText('');
     } finally {
       setLoading(false);
+      isProcessingRef.current = false; // Réinitialiser après traitement
     }
   };
 
