@@ -172,15 +172,16 @@ async def process_image(file: UploadFile = File(...)):
                 }
         
         print("[3] Sending to ABA Fusion AI (with Base64 Image)...")
-        # Encode image to base64 for Multimodal Vision
+        # Encode image to base64 for Multimodal Vision (Data URI format)
         with open(temp_file_path, "rb") as image_file:
             image_base64 = base64.b64encode(image_file.read()).decode('utf-8')
+            image_data_uri = f"data:image/jpeg;base64,{image_base64}"
             
         payload = {
             "event": "pcb_scan",
             "document_name": file.filename,
             "extracted_content": extracted_text,
-            "image_base64": image_base64,
+            "image_base64": image_data_uri,
             "timestamp": datetime.now().isoformat()
         }
         
@@ -206,6 +207,8 @@ async def process_image(file: UploadFile = File(...)):
         except requests.exceptions.RequestException as e:
             if "too many 504 error responses" in str(e) or "Gateway Timeout" in str(e):
                 return {"error": "Le serveur d'IA (Fusion AI) est actuellement surchargé ou indisponible (Erreur 504). Veuillez réessayer plus tard."}
+            if "too many 500 error responses" in str(e) or "Internal Server Error" in str(e):
+                return {"error": "Le serveur Fusion a renvoyé une erreur 500 (Erreur Interne). Le payload contenant l'image Base64 est peut-être rejeté."}
             return {"error": f"Erreur de connexion au serveur Fusion : {str(e)}"}
         
         if response.status_code in [200, 201]:
