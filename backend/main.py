@@ -33,7 +33,7 @@ print("Initializing EasyOCR models (this might take a few seconds on first start
 reader = easyocr.Reader(['fr', 'en'])
 print("EasyOCR initialized!")
 
-FUSION_WEBHOOK_URL = "https://fusion-ai-api.medifus.dev/webhooks/webhook-e3isjhe8kzmvenaizr5evbqv/process-image"
+FUSION_WEBHOOK_URL = "https://fusion-ai-api.medifus.dev/webhooks/webhook-f6425935-82ac-4d34-a7b0-9735d8cda314/process-image"
 CACHE_FILE = "cache.json"
 
 def load_cache():
