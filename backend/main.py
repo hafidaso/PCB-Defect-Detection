@@ -89,35 +89,27 @@ async def websocket_detect_box(websocket: WebSocket):
                 await websocket.send_json({"detected": False})
                 continue
                     
-            # 2. Geometric Filter (Shape)
-            blurred = cv2.GaussianBlur(gray, (5, 5), 0)
-            edged = cv2.Canny(blurred, 50, 150)
+            # 2. Robust Edge Density Filter (Center of the frame)
+            # Webcams have noise and perspective distortion, so contours often fail.
+            # We will just check if the center of the camera sees a lot of complex edges.
+            h_img, w_img = gray.shape
             
-            contours, _ = cv2.findContours(edged, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
-            contours = sorted(contours, key=cv2.contourArea, reverse=True)
+            # Extract the center 60% of the image
+            roi_w, roi_h = int(w_img * 0.6), int(h_img * 0.6)
+            cx, cy = w_img // 2, h_img // 2
             
-            detected_pcb = False
-            for c in contours[:3]:  # Check the top 3 largest objects
-                peri = cv2.arcLength(c, True)
-                approx = cv2.approxPolyDP(c, 0.05 * peri, True)
-                
-                area = cv2.contourArea(approx)
-                # If it's a large 4-point shape
-                if len(approx) == 4 and area > 15000:
-                    # 3. Edge Density Filter (Anti-Blank / Text Check)
-                    x, y, w, h = cv2.boundingRect(approx)
-                    roi = edged[y:y+h, x:x+w]
-                    
-                    if roi.size == 0:
-                        continue
-                        
-                    edge_pixels = cv2.countNonZero(roi)
-                    density = edge_pixels / float(w * h)
-                    
-                    # A PCB usually has an edge density > 3% due to components and text.
-                    if density > 0.03:
-                        detected_pcb = True
-                        break
+            roi = gray[cy - roi_h//2 : cy + roi_h//2, cx - roi_w//2 : cx + roi_w//2]
+            
+            # Slight blur to remove camera noise, then detect edges
+            blurred = cv2.GaussianBlur(roi, (5, 5), 0)
+            edged = cv2.Canny(blurred, 30, 100) # Lowered threshold for better sensitivity
+            
+            edge_pixels = cv2.countNonZero(edged)
+            density = edge_pixels / float(roi_w * roi_h)
+            
+            # If the center area has > 3.5% edge pixels, it's very likely a PCB 
+            # (PCBs have extreme edge density compared to blank backgrounds or hands)
+            detected_pcb = density > 0.035
                         
             await websocket.send_json({"detected": detected_pcb})
     except WebSocketDisconnect:
@@ -133,26 +125,57 @@ async def process_image(file: UploadFile = File(...)):
         
     try:
         print("[1] Processing image and detecting text using EasyOCR (Horizontal & Vertical)...")
+        ocr_details = []
+        
         # 1. Normal OCR
-        result_h = reader.readtext(temp_file_path, detail=0, paragraph=True)
-        text_h = "\n".join(result_h).strip()
+        result_h = reader.readtext(temp_file_path, detail=1, paragraph=False)
+        text_h_parts = []
+        for bbox, text, prob in result_h:
+            text_h_parts.append(text)
+            clean_bbox = [[int(pt[0]), int(pt[1])] for pt in bbox]
+            ocr_details.append({
+                "text": text,
+                "prob": float(prob),
+                "bbox": clean_bbox,
+                "orientation": "horizontal"
+            })
+        text_h = "\n".join(text_h_parts).strip()
         
         # 2. Vertical OCR
         img = cv2.imread(temp_file_path)
+        text_v = ""
         if img is not None:
+            orig_h, orig_w = img.shape[:2]
             rotated = cv2.rotate(img, cv2.ROTATE_90_CLOCKWISE)
             rotated_path = f"rotated_{temp_file_path}"
             cv2.imwrite(rotated_path, rotated)
-            result_v = reader.readtext(rotated_path, detail=0, paragraph=True)
-            text_v = "\n".join(result_v).strip()
+            
+            result_v = reader.readtext(rotated_path, detail=1, paragraph=False)
+            text_v_parts = []
+            for bbox, text, prob in result_v:
+                text_v_parts.append(text)
+                
+                unrotated_bbox = []
+                for pt in bbox:
+                    x_rot, y_rot = pt
+                    orig_x = int(y_rot)
+                    orig_y = orig_h - 1 - int(x_rot)
+                    unrotated_bbox.append([orig_x, orig_y])
+                    
+                ocr_details.append({
+                    "text": text,
+                    "prob": float(prob),
+                    "bbox": unrotated_bbox,
+                    "orientation": "vertical"
+                })
+            
+            text_v = "\n".join(text_v_parts).strip()
             os.remove(rotated_path)
-        else:
-            text_v = ""
             
         extracted_text = f"{text_h}\n{text_v}".strip()
         
         if len(extracted_text) < 5:
-            return {"error": "No clear text found in the image."}
+            extracted_text = "[Aucun texte lisible détecté par l'OCR]"
             
         print(f"[2] Extracted Text (Combined):\n{extracted_text}\n")
         
@@ -160,72 +183,211 @@ async def process_image(file: UploadFile = File(...)):
         cache_data = load_cache()
         cleaned_extracted = clean_text(extracted_text)
         
-        for key, cached_analysis in cache_data.items():
-            similarity = difflib.SequenceMatcher(None, cleaned_extracted, key).ratio()
-            if similarity > 0.85:
-                print(f"[CACHE HIT] Found previous analysis with {similarity*100:.1f}% match!")
-                return {
-                    "ocr_text": extracted_text,
-                    "ai_response": cached_analysis,
-                    "status": "success",
-                    "cached": True
-                }
+        # Skip cache if there's no real text (prevents false cache hits for different textless PCBs)
+        if len(cleaned_extracted) >= 5 and "Aucun texte lisible" not in extracted_text:
+            for key, cached_analysis in cache_data.items():
+                if len(key) >= 5:
+                    similarity = difflib.SequenceMatcher(None, cleaned_extracted, key).ratio()
+                    if similarity > 0.85:
+                        print(f"[CACHE HIT] Found previous analysis with {similarity*100:.1f}% match!")
+                        
+                        # Support old string cache format and new dict format
+                        ai_response = cached_analysis.get("ai_analysis", "") if isinstance(cached_analysis, dict) else cached_analysis
+                        predictions = cached_analysis.get("predictions", []) if isinstance(cached_analysis, dict) else []
+                        
+                        return {
+                            "ocr_text": extracted_text,
+                            "ocr_details": ocr_details,
+                            "ai_response": ai_response,
+                            "predictions": predictions,
+                            "status": "success",
+                            "cached": True
+                        }
         
-        print("[3] Sending to ABA Fusion AI (Text only)...")
-            
+        print("[3] Calling Roboflow Models (Solder & Assembly Defects) concurrently...")
+        roboflow_predictions = []
+        ROBOFLOW_API_KEY = os.environ.get("ROBOFLOW_API_KEY", "ETd6Ky2lUXN8CmqrVr3B")
+        
+        if ROBOFLOW_API_KEY:
+            try:
+                with open(temp_file_path, "rb") as image_file:
+                    image_data = base64.b64encode(image_file.read()).decode('utf-8')
+                
+                # Model 1: Original Solder Defects
+                url_model1 = f"https://detect.roboflow.com/pcb-solder-defect-detection-hn1sk-zdmoz/1?api_key={ROBOFLOW_API_KEY}"
+                # Model 2: Assembly Defects (Missing, Misaligned, etc.)
+                url_model2 = f"https://detect.roboflow.com/defects-2q87r-0lwnp/1?api_key={ROBOFLOW_API_KEY}"
+                
+                headers = {"Content-Type": "application/x-www-form-urlencoded"}
+                
+                import concurrent.futures
+                
+                def fetch_roboflow(url, source_name):
+                    try:
+                        res = requests.post(url, data=image_data, headers=headers, timeout=15)
+                        if res.status_code == 200:
+                            preds = res.json().get("predictions", [])
+                            # Add a source tag so the frontend/AI knows where the defect came from
+                            for p in preds:
+                                p["model_source"] = source_name
+                            return preds
+                        else:
+                            print(f"   -> Roboflow API Error ({source_name}): {res.status_code}")
+                            return []
+                    except Exception as e:
+                        print(f"   -> Error calling Roboflow ({source_name}): {str(e)}")
+                        return []
+
+                # Execute both requests at the exact same time (Concurrency) to save time
+                with concurrent.futures.ThreadPoolExecutor(max_workers=2) as executor:
+                    future1 = executor.submit(fetch_roboflow, url_model1, "solder_defect")
+                    future2 = executor.submit(fetch_roboflow, url_model2, "assembly_defect")
+                    
+                    roboflow_predictions.extend(future1.result())
+                    roboflow_predictions.extend(future2.result())
+                    
+                print(f"   -> Found {len(roboflow_predictions)} combined defects visually.")
+            except Exception as e:
+                print(f"   -> Error in Roboflow processing: {str(e)}")
+        else:
+            print("   -> Missing ROBOFLOW_API_KEY. Skipping visual defect detection.")
+
+        print("[4] Sending OCR + YOLO data to Fusion AI...")
+
         payload = {
             "event": "pcb_scan",
             "document_name": file.filename,
             "extracted_content": extracted_text,
+            "visual_defects": roboflow_predictions,  # YOLO bounding boxes
             "timestamp": datetime.now().isoformat()
         }
-        
+
         headers = {"Content-Type": "application/json"}
-        
-        # Configure retry strategy
+
+        import time
         from requests.adapters import HTTPAdapter
         from urllib3.util.retry import Retry
-        
-        session = requests.Session()
-        retry_strategy = Retry(
-            total=3,
-            status_forcelist=[429, 500, 502, 503, 504],
-            allowed_methods=["POST"],
-            backoff_factor=1
-        )
-        adapter = HTTPAdapter(max_retries=retry_strategy)
-        session.mount("https://", adapter)
-        session.mount("http://", adapter)
-        
-        try:
-            response = session.post(FUSION_WEBHOOK_URL, data=json.dumps(payload), headers=headers, timeout=60)
-        except requests.exceptions.RequestException as e:
-            if "too many 504 error responses" in str(e) or "Gateway Timeout" in str(e):
-                return {"error": "Le serveur d'IA (Fusion AI) est actuellement surchargé ou indisponible (Erreur 504). Veuillez réessayer plus tard."}
-            if "too many 500 error responses" in str(e) or "Internal Server Error" in str(e):
-                return {"error": "Le serveur Fusion a renvoyé une erreur 500 (Erreur Interne). Le payload contenant l'image Base64 est peut-être rejeté."}
-            return {"error": f"Erreur de connexion au serveur Fusion : {str(e)}"}
-        
+
+        # Stratégie : 1 tentative principale + 1 seule retry si 504
+        # (évite de gaspiller des tokens LLM en relançant plusieurs fois)
+        MAX_ATTEMPTS = 2        # 1 essai + 1 retry max
+        RETRY_WAIT_SECONDS = 30  # attendre 30s pour que le LLM finisse côté Fusion
+        attempt = 0
+        response = None
+
+        while attempt < MAX_ATTEMPTS:
+            attempt += 1
+            session = requests.Session()
+            adapter = HTTPAdapter(max_retries=Retry(total=0, allowed_methods=["POST"]))
+            session.mount("https://", adapter)
+            session.mount("http://", adapter)
+
+            try:
+                print(f"   -> Fusion AI tentative {attempt}/{MAX_ATTEMPTS} (timeout client désactivé)...")
+                # timeout=None → pas de timeout côté client
+                response = session.post(
+                    FUSION_WEBHOOK_URL,
+                    data=json.dumps(payload),
+                    headers=headers,
+                    timeout=None
+                )
+
+                if response.status_code in [200, 201]:
+                    print(f"   -> Fusion AI succès à la tentative {attempt}.")
+                    break  # ✅ Réponse valide
+
+                elif response.status_code in [502, 503, 504] and attempt < MAX_ATTEMPTS:
+                    # Gateway Timeout — on attend et on réessaie UNE seule fois
+                    print(f"   -> Fusion AI {response.status_code}. "
+                          f"Attente {RETRY_WAIT_SECONDS}s puis dernière tentative...")
+                    time.sleep(RETRY_WAIT_SECONDS)
+
+                else:
+                    # Erreur non-récupérable ou max attempts atteint
+                    print(f"   -> Fusion AI erreur finale : {response.status_code}")
+                    break
+
+            except requests.exceptions.RequestException as e:
+                print(f"   -> Erreur réseau Fusion AI (tentative {attempt}): {str(e)}")
+                partial_msg = (
+                    "⚠️ **Fusion AI indisponible (Erreur réseau)**\n\n"
+                    f"✅ **YOLOv11 a détecté {len(roboflow_predictions)} défaut(s) visuels** sur cette carte.\n\n"
+                    f"Erreur technique : `{str(e)[:120]}`\n\n"
+                    "💡 Réessayez dans quelques instants."
+                )
+                return {
+                    "ocr_text": extracted_text,
+                    "ocr_details": ocr_details,
+                    "ai_response": partial_msg,
+                    "predictions": roboflow_predictions,
+                    "status": "success",
+                    "cached": False,
+                    "fusion_unavailable": True
+                }
+
         if response.status_code in [200, 201]:
             try:
                 fusion_data = response.json()
             except ValueError:
                 fusion_data = {"result": response.text}
+
+            ai_result = fusion_data.get(
+                "ai_analysis",
+                fusion_data.get("result", "Analysis completed but no text response was provided.")
+            )
+
+            # --- CLEANUP FUSION AI METADATA ---
+            if isinstance(ai_result, str):
+                import re
+                # Remove random JSON/Node metadata injected by Fusion webhook
+                ai_result = re.sub(r'\{\s*"success":\s*true\s*\}', '', ai_result)
+                ai_result = re.sub(r'Unknown Node', '', ai_result)
+                ai_result = re.sub(r'^success$', '', ai_result, flags=re.MULTILINE)
+                ai_result = re.sub(r'^\d{1,2}/\d{1,2}/\d{4},\s*\d{1,2}:\d{2}:\d{2}\s*(AM|PM)$', '', ai_result, flags=re.MULTILINE)
+                ai_result = re.sub(r'^Node ID:\s*[a-f0-9\-]+$', '', ai_result, flags=re.MULTILINE)
                 
-            ai_result = fusion_data.get("ai_analysis", fusion_data.get("result", "Analysis completed but no text response was provided."))
-            
-            # Save to cache
-            cache_data[cleaned_extracted] = ai_result
-            save_cache(cache_data)
-            
+                # Split by duplicated blocks if Fusion repeats the same output
+                if '🔌 **Composant' in ai_result:
+                    parts = ai_result.split('🔌 **Composant')
+                    if len(parts) > 2:
+                        # Keep only the first occurrence
+                        ai_result = parts[0] + '🔌 **Composant' + parts[1]
+                
+                ai_result = re.sub(r'\n{3,}', '\n\n', ai_result).strip()
+
+            predictions = roboflow_predictions
+
+            # Save to cache only if text is meaningful
+            if len(cleaned_extracted) >= 5 and "Aucun texte lisible" not in extracted_text:
+                cache_data[cleaned_extracted] = {"ai_analysis": ai_result, "predictions": predictions}
+                save_cache(cache_data)
+
             return {
                 "ocr_text": extracted_text,
+                "ocr_details": ocr_details,
                 "ai_response": ai_result,
+                "predictions": predictions,
                 "status": "success",
                 "cached": False
             }
         else:
-            return {"error": f"Fusion Server Error: {response.status_code} - {response.text}"}
+            print(f"   -> Fusion AI HTTP error: {response.status_code}")
+            partial_msg = (
+                f"⚠️ **Fusion AI a retourné une erreur ({response.status_code})**\n\n"
+                f"✅ **YOLOv11 a détecté {len(roboflow_predictions)} défaut(s) visuels** sur cette carte.\n\n"
+                "L'analyse textuelle de Fusion AI est temporairement indisponible. "
+                "Les annotations visuelles YOLO restent valides.\n\n"
+                "💡 Réessayez dans quelques instants pour l'analyse complète."
+            )
+            return {
+                "ocr_text": extracted_text,
+                "ocr_details": ocr_details,
+                "ai_response": partial_msg,
+                "predictions": roboflow_predictions,
+                "status": "success",
+                "cached": False,
+                "fusion_unavailable": True
+            }
             
     except Exception as e:
         return {"error": f"Connection or processing failed: {str(e)}"}

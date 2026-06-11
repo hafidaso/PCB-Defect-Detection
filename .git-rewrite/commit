@@ -1,0 +1,16 @@
+tree 6bb01ab287689184f0ea1a6a4d5bd58c4808e553
+parent 4769e6afed0f3ca1b3b459dd2a8f3420943f7276
+author Hafida Belayd <hafidabelaidagnaoui@gmail.com> 1781200104 +0100
+committer Hafida Belayd <hafidabelaidagnaoui@gmail.com> 1781200104 +0100
+
+feat: Hybrid YOLO + Fusion AI system
+
+- Integrate Roboflow YOLOv11 (pcb-solder-defect-detection) for visual defect detection
+- Add PcbVisionRenderer with YOLO bounding boxes overlay + neon corner accents
+- Add 'Download with YOLO' button: burns boxes onto image via Canvas, adds watermark
+- Backend: resilient Fusion AI error handling — returns YOLO+OCR even on 504/timeout
+- Extend Fusion AI timeout to 300s (5 min) to handle slow LLM responses
+- Fix PDF export oklch color issue (html2canvas compatibility) with onclone fix
+- Fix Recharts PieChart height warning with explicit pixel height
+- AR mode: futuristic HUD overlay with laser scan animation
+- MES-style split dashboard: Left (Control/Stats) + Right (Vision/AI Results)

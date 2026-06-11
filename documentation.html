@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>MediScan - Documentation</title>
+    <title>PCBScan - Documentation</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet"
@@ -76,13 +76,14 @@
         <!-- Header -->
         <header class="text-center mb-16">
             <div class="mb-6 flex justify-center">
-                <img src="glfmZ18HjK28FyARiQJNDHHx0.svg" alt="MediScan Logo" class="h-24 w-auto drop-shadow-md">
+                <div class="w-24 h-24 bg-gradient-to-br from-emerald-400 to-teal-500 rounded-3xl flex items-center justify-center shadow-2xl shadow-emerald-500/30">
+                    <svg class="w-14 h-14 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 3v2m6-2v2M9 19v2m6-2v2M5 9H3m2 6H3m18-6h-2m2 6h-2M7 19h10a2 2 0 002-2V7a2 2 0 00-2-2H7a2 2 0 00-2 2v10a2 2 0 002 2zM9 9h6v6H9V9z"></path></svg>
+                </div>
             </div>
             <h1
                 class="text-5xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-emerald-600 to-teal-600 mb-4 tracking-tight">
-                MediScan Lab</h1>
-            <p class="text-xl text-slate-500 max-w-2xl mx-auto">Documentation du système intelligent de numérisation et
-                d'analyse des médicaments.</p>
+                PCBScan Studio</h1>
+            <p class="text-xl text-slate-500 max-w-2xl mx-auto">Documentation du système intelligent de contrôle qualité et de détection de défauts sur circuits imprimés (PCB).</p>
 
             <div
                 class="mt-8 flex justify-center items-center space-x-2 text-sm font-medium text-slate-500 bg-white/50 inline-flex px-6 py-2 rounded-full shadow-sm border border-slate-200">
@@ -95,7 +96,7 @@
 
         <!-- Dashboard Screenshot -->
         <div class="mb-12 rounded-2xl overflow-hidden shadow-xl shadow-emerald-900/5 border border-slate-200">
-            <img src="dashboard_screenshot.jpg" alt="MediScan Dashboard Overview"
+            <img src="dashboard_screenshot.jpg" alt="PCBScan Dashboard Overview"
                 class="w-full object-cover hover:scale-[1.01] transition-transform duration-700">
         </div>
 
@@ -113,14 +114,14 @@
                         viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
                     </svg>
-                    <strong>Frontend (Dashboard) :</strong> React.js, Vite, TailwindCSS.
+                    <strong>Frontend (Dashboard) :</strong> React.js, Vite, TailwindCSS, Recharts. Glassmorphism dynamique.
                 </li>
                 <li class="flex items-start">
                     <svg class="w-6 h-6 text-emerald-500 mr-2 shrink-0" fill="none" stroke="currentColor"
                         viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
                     </svg>
-                    <strong>Backend (API) :</strong> Python, FastAPI, OpenCV, EasyOCR.
+                    <strong>Backend (API) :</strong> Python, FastAPI, OpenCV, YOLOv11 (Roboflow), EasyOCR.
                 </li>
             </ul>
         </section>
@@ -150,31 +151,24 @@
                 <div class="relative">
                     <span
                         class="absolute -left-[41px] bg-blue-500 text-white w-8 h-8 rounded-full flex items-center justify-center font-bold shadow-md">2</span>
-                    <h3 class="font-bold text-slate-800 text-lg">Boucle de Vérification Silencieuse (Auto-Capture)</h3>
-                    <p class="text-sm text-slate-600 mt-1">Toutes les secondes, le Dashboard capture une image depuis la
-                        vidéo via un <em>Canvas HTML</em> caché et l'envoie au filtre intelligent du backend
-                        (<code>/detect-box</code>) pour voir si un médicament est devant la lentille.</p>
+                    <h3 class="font-bold text-slate-800 text-lg">Boucle WebSocket Silencieuse (Auto-Capture)</h3>
+                    <p class="text-sm text-slate-600 mt-1">Le flux vidéo est envoyé en continu via <em>WebSocket</em> vers le backend. Le serveur analyse la <strong>Densité des Arêtes (Edge Density)</strong>. Si le serveur détecte plus de 3.5% de densité (typique des pistes et composants d'un PCB), il déclenche la capture automatique !</p>
                 </div>
 
                 <!-- Step 3 -->
                 <div class="relative">
                     <span
                         class="absolute -left-[41px] bg-blue-500 text-white w-8 h-8 rounded-full flex items-center justify-center font-bold shadow-md">3</span>
-                    <h3 class="font-bold text-slate-800 text-lg">Validation et Envoi à l'IA</h3>
-                    <p class="text-sm text-slate-600 mt-1">Si le serveur valide l'image (<code>detected: true</code>),
-                        la boucle s'arrête ! La caméra se met en pause, et la photo est immédiatement envoyée au moteur
-                        principal (<code>/process-image</code>) pour lancer l'OCR et consulter ABA Fusion AI.</p>
+                    <h3 class="font-bold text-slate-800 text-lg">Validation et Inspection Multi-Couches</h3>
+                    <p class="text-sm text-slate-600 mt-1">La photo haute résolution est envoyée au endpoint <code>/process-image</code>. Le backend lance l'extraction de texte (OCR) et la détection de défauts physiques via <strong>DEUX modèles YOLOv11 simultanés</strong> (un pour les soudures, un pour l'assemblage).</p>
                 </div>
 
                 <!-- Step 4 -->
                 <div class="relative">
                     <span
                         class="absolute -left-[41px] bg-blue-500 text-white w-8 h-8 rounded-full flex items-center justify-center font-bold shadow-md">4</span>
-                    <h3 class="font-bold text-slate-800 text-lg">Affichage des Résultats</h3>
-                    <p class="text-sm text-slate-600 mt-1">Le résultat médical est affiché à l'écran. Si le système
-                        Python indique qu'il l'a trouvé dans sa mémoire (Cache), l'interface React déclenche
-                        dynamiquement un badge visuel <strong>CACHE HIT ⚡</strong>. L'utilisateur peut ensuite appuyer
-                        sur la corbeille pour scanner un nouveau médicament.</p>
+                    <h3 class="font-bold text-slate-800 text-lg">Synthèse et Affichage</h3>
+                    <p class="text-sm text-slate-600 mt-1">Si le PCB est connu, le résultat s'affiche instantanément avec le badge <strong>CACHE HIT ⚡</strong>. Sinon, un Agent IA (Fusion AI) compile les données OCR et YOLO pour rédiger un rapport qualité complet, directement affiché dans le dashboard.</p>
                 </div>
             </div>
         </section>
@@ -186,121 +180,85 @@
                 Détails du Backend (main.py)
             </h2>
             <p class="text-slate-600 mb-6">Le fichier <code>main.py</code> contient toute la logique complexe du
-                système. Voici les 5 composants majeurs que nous y avons programmés :</p>
+                système. Voici les algorithmes majeurs que nous y avons programmés :</p>
 
             <!-- Detail 1: EasyOCR & SSL -->
-            <h3 class="text-lg font-bold text-slate-700 mb-2">1. Intégration d'EasyOCR et correction SSL</h3>
-            <p class="text-sm text-slate-500 mb-3">Nous utilisons le modèle Deep Learning <strong>EasyOCR</strong>. Pour
-                permettre le téléchargement des poids du modèle sur macOS sans erreur de certificat, nous avons ajouté
-                un bypass SSL sécurisé pour le contexte local.</p>
+            <h3 class="text-lg font-bold text-slate-700 mb-2">1. Extraction d'Informations (OCR bilingue)</h3>
+            <p class="text-sm text-slate-500 mb-3">Le texte sur les composants aide l'IA à identifier le modèle de la carte.</p>
             <div class="rounded-xl overflow-hidden mb-6 shadow-md text-sm border border-slate-200">
-                <pre><code class="language-python">import easyocr
-import ssl
-
-# Correction de l'erreur SSL sur Mac pour le téléchargement des modèles
-try:
-    _create_unverified_https_context = ssl._create_unverified_context
-except AttributeError:
-    pass
-else:
-    ssl._create_default_https_context = _create_unverified_https_context
-
-# Initialisation du modèle OCR bilingue (Français, Anglais)
+                <pre><code class="language-python"># Initialisation du modèle OCR bilingue (Français, Anglais)
 reader = easyocr.Reader(['fr', 'en'])
+
+# Détection de texte (y compris le texte orienté verticalement)
+result_h = reader.readtext(image_path, detail=1, paragraph=False)
+# ... code d'extraction des métadonnées ...
 </code></pre>
             </div>
 
-            <!-- Detail 2: CORS -->
-            <h3 class="text-lg font-bold text-slate-700 mb-2">2. Configuration CORS (FastAPI)</h3>
-            <p class="text-sm text-slate-500 mb-3">Pour que l'application React (port 5173) puisse communiquer avec
-                l'API Python (port 8000), le middleware CORS a été configuré.</p>
-            <div class="rounded-xl overflow-hidden mb-6 shadow-md text-sm border border-slate-200">
-                <pre><code class="language-python">app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["*"], # Accepte les requêtes du Dashboard
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
-</code></pre>
-            </div>
-
-            <!-- Detail 3: Detect Box -->
-            <h3 class="text-lg font-bold text-slate-700 mb-2">3. Les Filtres d'Intelligence Visuelle
-                <code>/detect-box</code>
+            <!-- Detail 2: WebSocket OpenCV -->
+            <h3 class="text-lg font-bold text-slate-700 mb-2">2. Filtre d'Auto-Capture Intelligent (Anti-Personne & Edge Density)
+                <span class="text-xs font-mono bg-slate-100 text-slate-500 px-2 py-1 rounded ml-2">/ws/detect-box</span>
             </h3>
-            <p class="text-sm text-slate-500 mb-3">Ce code empêche la caméra de prendre des visages ou des murs vides en
-                photo. Il exige une forme rectangulaire AVEC du texte à l'intérieur.</p>
+            <p class="text-sm text-slate-500 mb-3">Pour éviter les déclenchements accidentels, l'algorithme ne capture que si l'image présente la complexité visuelle typique d'un circuit imprimé.</p>
             <div class="rounded-xl overflow-hidden mb-6 shadow-md text-sm border border-slate-200">
-                <pre><code class="language-python">@app.post("/detect-box")
-async def detect_box(file: UploadFile = File(...)):
-    # 1. Filtre Anti-Personne (Rejette si un visage occupe >10% de l'image)
-    face_cascade = cv2.CascadeClassifier(cv2.data.haarcascades + 'haarcascade_frontalface_default.xml')
-    faces = face_cascade.detectMultiScale(gray, scaleFactor=1.1, minNeighbors=5, minSize=(100, 100))
-    if len(faces) > 0 and (faces[0][2] * faces[0][3] > frame_area * 0.10):
-        return {"detected": False} 
+                <pre><code class="language-python"># /ws/detect-box - Détection Automatique (Anti-Personne & Densité)
+gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
 
-    # 2. Filtre Géométrique et Densité (Doit être un grand rectangle avec du texte)
-    contours, _ = cv2.findContours(edged, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
-    for c in contours[:3]:
-        approx = cv2.approxPolyDP(c, 0.05 * cv2.arcLength(c, True), True)
-        
-        if len(approx) == 4 and cv2.contourArea(approx) > 15000:
-            x, y, w, h = cv2.boundingRect(approx)
-            roi = edged[y:y+h, x:x+w]
-            
-            # Densité des arêtes (Texte) > 3%
-            density = cv2.countNonZero(roi) / float(w * h)
-            if density > 0.03:
-                return {"detected": True} # Boîte de médicament validée !
+# 1. Filtre Rejet de Visage (Anti-Personne)
+face_cascade = cv2.CascadeClassifier(cv2.data.haarcascades + 'haarcascade_frontalface_default.xml')
+faces = face_cascade.detectMultiScale(gray, scaleFactor=1.1, minNeighbors=5, minSize=(100, 100))
+if faces_detectees_prennent_trop_de_place:
+    return False # Ce n'est pas un PCB, c'est un humain !
+
+# 2. Densité des arêtes (Canny) sur le centre de l'image
+roi = gray[cy - roi_h//2 : cy + roi_h//2, cx - roi_w//2 : cx + roi_w//2]
+edged = cv2.Canny(cv2.GaussianBlur(roi, (5, 5), 0), 30, 100)
+density = cv2.countNonZero(edged) / float(roi_w * roi_h)
+
+# Les PCB ont une densité > 3.5% grâce à leurs multiples composants
+if density > 0.035:
+    await websocket.send_json({"detected": True})
 </code></pre>
             </div>
 
             <!-- Detail 4: Caching -->
-            <h3 class="text-lg font-bold text-slate-700 mb-2">4. Le Système de Mémoire Ultra-Rapide (Cache)</h3>
-            <p class="text-sm text-slate-500 mb-3">Une fois l'image validée et traitée par <code>/process-image</code>,
-                ce système compare le texte scanné avec l'historique pour éviter de rappeler l'IA inutilement si le
-                médicament a déjà été analysé.</p>
+            <h3 class="text-lg font-bold text-slate-700 mb-2">3. Dual YOLOv11 & Cache Ultra-Rapide</h3>
+            <p class="text-sm text-slate-500 mb-3">L'image passe par <strong>DEUX modèles YOLOv11 concurrents</strong> hébergés sur Roboflow : <br>
+            1. <code>pcb-solder-defect-detection</code> (Défauts de soudure)<br>
+            2. <code>defects-2q87r-0lwnp</code> (Défauts d'assemblage).<br>
+            Le résultat global est mis en cache (sauf si la carte est sans texte "Bare PCB" pour éviter les faux positifs).</p>
             <div class="rounded-xl overflow-hidden mb-6 shadow-md text-sm border border-slate-200">
-                <pre><code class="language-python">extracted_text = reader.readtext(temp_file_path, detail=0, paragraph=True)
-cleaned_extracted = clean_text(extracted_text) # Nettoyage du bruit OCR
+                <pre><code class="language-python"># 1. Requêtes concurrentes vers Roboflow (Dual YOLOv11)
+with concurrent.futures.ThreadPoolExecutor(max_workers=2) as executor:
+    future1 = executor.submit(fetch_roboflow, url_model1, "solder_defect")
+    future2 = executor.submit(fetch_roboflow, url_model2, "assembly_defect")
+    roboflow_predictions.extend(future1.result() + future2.result())
 
-# Recherche de similarité (Tolérance de 15% d'erreur OCR)
-for key, cached_analysis in cache_data.items():
-    similarity = difflib.SequenceMatcher(None, cleaned_extracted, key).ratio()
-    if similarity > 0.85:
-        print("[CACHE HIT] Correspondance trouvée !")
-        return {
-            "ai_response": cached_analysis,
-            "cached": True
-        }
+# 2. Recherche de similarité OCR (Tolérance de 15% d'erreur)
+if len(cleaned_extracted) >= 5:  # Seulement si du texte est détecté
+    for key, cached_analysis in cache_data.items():
+        if difflib.SequenceMatcher(None, cleaned_extracted, key).ratio() > 0.85:
+            return cached_analysis
 </code></pre>
             </div>
 
-            <!-- Detail 5: Webhook -->
-            <h3 class="text-lg font-bold text-slate-700 mb-2">5. Communication avec ABA Fusion AI</h3>
-            <p class="text-sm text-slate-500 mb-3">Si l'image n'est pas dans le cache, le serveur prépare les données et
-                appelle le Webhook externe pour obtenir l'analyse médicale.</p>
-            <div class="rounded-xl overflow-hidden shadow-md text-sm border border-slate-200">
-                <pre><code class="language-python"># Préparation du JSON
-payload = {
-    "event": "medicine_scan",
-    "document_name": file.filename,
-    "extracted_content": extracted_text,
-    "timestamp": datetime.now().isoformat()
-}
+            <!-- Detail 5: Webhook & Fusion AI Robustness -->
+            <h3 class="text-lg font-bold text-slate-700 mb-2">4. Résilience Webhook (Fusion AI) & Nettoyage</h3>
+            <p class="text-sm text-slate-500 mb-3">Le backend ne se contente pas d'appeler l'API Fusion AI. Il intègre une <strong>Stratégie de Retry (Fallback)</strong> en cas de Timeout (504), et un <strong>Nettoyeur Regex</strong> pour purger les métadonnées techniques renvoyées par le webhook.</p>
+            <div class="rounded-xl overflow-hidden mb-6 shadow-md text-sm border border-slate-200">
+                <pre><code class="language-python"># 1. Stratégie de Retry (Gateway Timeout 504)
+while attempt < MAX_ATTEMPTS:
+    response = session.post(FUSION_WEBHOOK_URL, data=payload, timeout=None)
+    if response.status_code in [502, 503, 504]:
+        time.sleep(30) # Attendre que le LLM finisse en arrière-plan
+        continue
+    # Si échec total, on renvoie quand même les résultats YOLO (Fallback) !
 
-# Envoi de la requête au système Fusion AI
-response = requests.post(FUSION_WEBHOOK_URL, data=json.dumps(payload), headers={"Content-Type": "application/json"})
-
-if response.status_code in [200, 201]:
-    ai_result = response.json().get("ai_analysis")
-    
-    # Sauvegarde dans le cache local pour la prochaine fois
-    cache_data[cleaned_extracted] = ai_result
-    save_cache(cache_data)
-    
-    return {"ai_response": ai_result, "cached": False}
+# 2. Nettoyage des Métadonnées (Regex)
+ai_result = re.sub(r'\{\s*"success":\s*true\s*\}', '', ai_result)
+ai_result = re.sub(r'Unknown Node', '', ai_result)
+ai_result = re.sub(r'^\d{1,2}/\d{1,2}/\d{4},\s*\d{1,2}:\d{2}:\d{2}\s*(AM|PM)$', '', ai_result, flags=re.MULTILINE)
+ai_result = re.sub(r'^Node ID:\s*[a-f0-9\-]+$', '', ai_result, flags=re.MULTILINE)
 </code></pre>
             </div>
         </section>
@@ -309,63 +267,62 @@ if response.status_code in [200, 201]:
         <section class="glass-card rounded-3xl p-8 mb-10 transition hover:shadow-xl duration-300">
             <h2 class="text-2xl font-bold text-slate-800 mb-6 flex items-center">
                 <span class="bg-purple-100 text-purple-600 p-2 rounded-lg mr-4">🤖</span>
-                Le Workflow de ABA Fusion AI
+                Le Workflow de Fusion AI
             </h2>
             <p class="text-slate-600 leading-relaxed mb-6">Lorsque le backend Python identifie une
-                <strong>nouvelle</strong> boîte de médicament, il envoie le texte brut extrait par OCR vers la
-                plateforme <strong>ABA Fusion AI</strong>. Le fichier JSON du workflow montre comment cette plateforme
-                traite la requête :
+                <strong>nouvelle</strong> carte PCB, il envoie les défauts YOLO et le texte OCR vers la
+                plateforme <strong>Fusion AI</strong>. Voici comment cette plateforme traite la requête :
             </p>
 
-            <div class="mb-10 rounded-2xl overflow-hidden border border-purple-200 shadow-lg shadow-purple-900/10">
-                <img src="workflow_screenshot.jpg" alt="ABA Fusion AI Workflow"
-                    class="w-full object-cover hover:scale-[1.02] transition-transform duration-700">
-            </div>
-
-            <div class="relative pl-8 border-l-2 border-purple-300 space-y-8">
+            <div class="relative pl-8 border-l-2 border-purple-300 space-y-8 mt-8">
                 <!-- Step 1 -->
                 <div class="relative">
                     <span
                         class="absolute -left-[41px] bg-purple-500 text-white w-8 h-8 rounded-full flex items-center justify-center font-bold shadow-md">1</span>
-                    <h3 class="font-bold text-slate-800 text-lg">Webhook Trigger <code>/process-image</code></h3>
-                    <p class="text-sm text-slate-600 mt-1">Le workflow écoute les requêtes HTTP entrantes (POST). Dès
-                        que notre code Python envoie le texte brut via la requête `requests.post`, ce nœud s'active et
-                        capte la donnée.</p>
+                    <h3 class="font-bold text-slate-800 text-lg">Webhook Trigger & Formatage (Script Node)</h3>
+                    <p class="text-sm text-slate-600 mt-1">Le workflow écoute les requêtes HTTP. Un script JS transforme le tableau de défauts de YOLO (en ajoutant la source "solder" ou "assembly") en un résumé lisible (ex: "Source: assembly_defect - Défaut: Missing Component").</p>
                 </div>
 
                 <!-- Step 2 -->
                 <div class="relative">
                     <span
                         class="absolute -left-[41px] bg-purple-500 text-white w-8 h-8 rounded-full flex items-center justify-center font-bold shadow-md">2</span>
-                    <h3 class="font-bold text-slate-800 text-lg">L'Agent IA (Pharmacien Expert)</h3>
-                    <p class="text-sm text-slate-600 mt-1">C'est le cœur de l'analyse ! Ce nœud reçoit les données et
-                        utilise le modèle de langage <strong>Google LLM (gemini-3-flash-preview)</strong>. Il est
+                    <h3 class="font-bold text-slate-800 text-lg">L'Agent IA (Expert Industriel)</h3>
+                    <p class="text-sm text-slate-600 mt-1">Ce nœud utilise un modèle de langage avancé. Il est
                         programmé avec un <em>System Prompt</em> très strict :</p>
                     <div
-                        class="bg-purple-50/50 p-4 mt-3 rounded-xl border border-purple-100 italic text-slate-700 text-sm">
-                        "Tu es un pharmacien expert... Ton rôle est d'analyser le texte brut (avec fautes d'OCR) et de
-                        déduire le médicament. Formate ta réponse exactement avec : 💊 Médicament détecté, 🔬 Principe
-                        actif, ⚠️ Effets secondaires, 🚫 Contre-indications, 💡 Conseil."
-                    </div>
+                        class="bg-purple-50/50 p-4 mt-3 rounded-xl border border-purple-100 text-slate-700 text-sm font-mono whitespace-pre-wrap">Tu es un Ingénieur Qualité expert en électronique et un assistant IA spécialisé dans l'inspection visuelle globale des circuits imprimés (PCB).
+Ton rôle est d'analyser l'intégralité de l'image de la carte, les textes extraits (OCR), et les défauts visuels détectés par nos DEUX modèles d'Intelligence Artificielle (YOLO), afin de fournir un rapport complet d'inspection.
+
+Format de réponse attendu (réponds uniquement avec cette structure) :
+
+🔌 **Aperçu Général de la Carte :** [Décris l'ensemble de la carte]
+⚙️ **Composants Principaux :** [Liste les références lues par l'OCR]
+🔄 **Analyse des Soudures et du Montage :** [Analyse visuelle globale]
+🚫 **Anomalies Critiques et Défauts (YOLO & IA) :** [Liste les défauts détectés par YOLO. Sépare clairement les défauts détectés par le modèle de soudure (source: solder_defect) et ceux détectés par le modèle d'assemblage (source: assembly_defect). Ex: "Défaut d'assemblage : Installation incorrecte". S'il n'y en a aucun, précise-le.]
+💡 **Recommandation Finale :** [Action requise par l'opérateur]
+
+Règles strictes :
+1. Prête une attention particulière à la clé "model_source" dans les données JSON des défauts visuels pour différencier les erreurs de montage des erreurs de soudure.
+2. Analyse LA CARTE ENTIÈRE. S'il n'y a pas de texte OCR, base-toi uniquement sur l'analyse visuelle.
+3. Rédige ta réponse en français clair, technique et orienté industrie.
+4. Si l'image montre une carte nue (Bare PCB) sans aucun composant soudé ni étain, déclare immédiatement : "CARTE NUE DÉTECTÉE - Aucune inspection de soudure n'est possible", et décris uniquement la qualité des pistes et des pastilles.</div>
                 </div>
 
                 <!-- Step 3 -->
                 <div class="relative">
                     <span
                         class="absolute -left-[41px] bg-purple-500 text-white w-8 h-8 rounded-full flex items-center justify-center font-bold shadow-md">3</span>
-                    <h3 class="font-bold text-slate-800 text-lg">Réponse Webhook (Respond to Webhook)</h3>
-                    <p class="text-sm text-slate-600 mt-1">Une fois que l'Agent a généré l'analyse médicale formatée et
-                        sécurisée, ce dernier nœud prend le résultat et le renvoie à notre serveur Python avec le code
-                        HTTP <code>200</code>. Le Python le transmet ensuite au Dashboard React pour l'afficher à
-                        l'utilisateur.</p>
+                    <h3 class="font-bold text-slate-800 text-lg">Réponse Webhook</h3>
+                    <p class="text-sm text-slate-600 mt-1">L'analyse est renvoyée à notre serveur Python, mise en cache, puis affichée sur le Dashboard avec une mise en forme Markdown professionnelle.</p>
                 </div>
             </div>
         </section>
 
         <!-- Footer -->
         <footer class="text-center text-slate-400 text-sm mt-12 pb-8">
-            <p>&copy; 2026 MediScan Lab. Tous droits réservés.</p>
-            <p class="mt-2">Développé avec la pile technique React & Python FastAPI.</p>
+            <p>&copy; 2026 PCBScan Studio. Tous droits réservés.</p>
+            <p class="mt-2">Développé avec la pile technique React, Tailwind, YOLOv11 & Python FastAPI.</p>
         </footer>
     </div>
 

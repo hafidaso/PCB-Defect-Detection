@@ -21,3 +21,5 @@ dist/
 # Secrets and Cache
 Medscan-*.json
 backend/cache.json
+PCB-2026-06-11T16_29_01.837Z.json
+PCB-*.json

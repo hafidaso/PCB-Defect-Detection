@@ -2,56 +2,82 @@
 
 **Créé par Hafida Belayd**
 
-Bienvenue dans la documentation officielle de **PCBScan**, une application web intelligente conçue pour numériser, analyser et détecter les défauts sur les circuits imprimés (PCB) grâce à l'Intelligence Artificielle, la vision par ordinateur (Computer Vision) et le traitement d'images en temps réel.
+Bienvenue dans la documentation officielle de **PCBScan**, une application web intelligente conçue pour numériser, analyser et détecter les défauts sur les circuits imprimés (PCB) grâce à l'Intelligence Artificielle (Fusion AI), la vision par ordinateur (OpenCV & YOLOv11) et le traitement d'images en temps réel.
 
 ---
 
 ## 🏗️ Architecture du Projet
 
-Le projet est divisé en deux parties principales :
-1. **Frontend (Dashboard)** : Construit avec React.js, Vite et TailwindCSS.
-2. **Backend (API)** : Construit avec Python, FastAPI, OpenCV et EasyOCR.
+Le projet est divisé en deux parties principales interconnectées :
+1. **Frontend (Dashboard)** : SPA construite avec React.js, Vite, TailwindCSS et Recharts.
+2. **Backend (API)** : Construit avec Python, FastAPI, OpenCV, EasyOCR, et intégration Webhook (Fusion AI) couplée à un système multi-modèles (Dual YOLOv11).
 
 ---
 
-## 🖥️ 1. Le Frontend : Le Dashboard (PCBScanDashboard)
+## 🖥️ 1. Le Frontend : L'Interface (PCBScanDashboard & HistoryPage)
 
-Le tableau de bord est l'interface utilisateur (UI). Il a été conçu avec une approche **"Glassmorphism"** moderne, offrant des effets de flou (blur), des dégradés subtils, et des animations fluides.
+Le tableau de bord a été conçu avec une approche **"Premium Glassmorphism"** moderne, offrant des effets de flou profonds (blur-2xl), des dégradés dynamiques (Conic Gradients), et des micro-animations fluides.
 
 ### Fonctionnalités principales :
-*   **Scanner en direct (Live Camera)** : 
-    *   Utilise l'API du navigateur (`navigator.mediaDevices.getUserMedia`) pour accéder à la caméra (ordinateur ou smartphone).
-    *   **Auto-Capture** : Le frontend envoie silencieusement une image au backend toutes les secondes. Si le backend détecte une carte PCB, l'image est capturée automatiquement.
-    *   **Animation Laser** : Une animation visuelle de "scan" balaie l'écran pendant que la caméra cherche un circuit imprimé.
-*   **Upload Manuel** : Possibilité de télécharger une image existante depuis l'appareil.
-*   **Indicateurs Visuels & UX** :
-    *   Barres de progression animées lors du traitement.
-    *   Badge exclusif **"CACHE HIT ⚡"** lorsqu'un PCB est reconnu instantanément depuis la mémoire.
-    *   Bouton pour copier rapidement le texte extrait.
-*   **Design Responsive & Moderne** : Couleurs modernes, ombres douces et bordures élégantes.
+*   **Scanner en direct (Live Camera & WebSockets)** : 
+    *   **Auto-Capture Intelligente** : Le frontend envoie un flux vidéo continu au backend via WebSocket. Dès que le backend détecte la présence d'un PCB (forte densité de détails), l'image est capturée automatiquement.
+*   **Upload Manuel** : Possibilité de télécharger une image depuis votre ordinateur.
+*   **Historique des Sessions** : Une page dédiée pour retrouver toutes les inspections passées avec recherche, filtres, et une **Fenêtre Modale (Popup)** détaillée affichant l'analyse IA complète de chaque carte.
+*   **Rendu Visuel Différencié (BBoxes)** : Les défauts de soudure (Short, Missing Solder) sont surlignés en Rouge/Orange, tandis que les défauts de montage (Missing Component, Misaligned) sont surlignés en Violet pour une identification visuelle instantanée.
+*   **Vision par Ordinateur (Dual YOLOv11)** : L'image est envoyée de manière concurrente (en parallèle) vers deux modèles hébergés sur Roboflow :
+    *   **Solder Defects Model** : `pcb-solder-defect-detection-hn1sk-zdmoz`
+    *   **Assembly Defects Model** : `defects-2q87r-0lwnp`
+    *   Les résultats (Bounding Boxes, Confiance, Classe) sont fusionnés et un tag `model_source` est injecté pour tracer l'origine de chaque défaut.
+*   **Indicateurs Visuels & Statistiques** :
+    *   Graphique circulaire (PieChart via Recharts) montrant le ratio des cartes saines vs défectueuses.
+    *   Bouton **Exporter Rapport PDF** pour télécharger la synthèse complète.
+    *   Badge **"CACHE HIT ⚡"** lorsqu'un PCB est reconnu instantanément depuis la mémoire.
 
 ---
 
 ## ⚙️ 2. Le Backend : Le Serveur (main.py)
 
-Le backend est le cerveau de l'application. Il reçoit les images, les analyse, et communique avec l'agent IA externe.
+Le backend est le cœur de l'application. Il gère l'analyse visuelle, la reconnaissance de caractères, et orchestre les modèles IA.
 
-### A. Endpoint `/detect-box` (Filtres d'Intelligence Visuelle)
-Ce point d'accès est appelé en boucle par la caméra en direct pour décider s'il faut prendre une photo. Il utilise **OpenCV** avec 3 filtres stricts :
-1.  **Filtre Anti-Personne (Face Rejection)** : Utilise `Haar Cascades` pour détecter les visages. Si un visage occupe plus de 10% de l'image (quelqu'un regarde la caméra), la capture est annulée.
-2.  **Filtre Géométrique (Formes)** : Utilise `cv2.Canny` (détection de contours) pour repérer les plus grands objets ayant exactement 4 angles (rectangles ou carrés typiques des PCB).
-3.  **Filtre de Densité de Composants (Anti-Vide)** : Une feuille blanche est rectangulaire, mais ce n'est pas un PCB. Le script calcule la densité des "arêtes" (composants/pistes/textes) dans le rectangle. Si la densité dépasse 3%, la présence de la carte est confirmée et validée !
+### A. Endpoint WebSocket `/ws/detect-box` (Auto-Capture Intelligente)
+Ce point d'accès analyse le flux vidéo en temps réel pour décider du moment idéal de la capture :
+1.  **Filtre Anti-Visage (Face Rejection)** : Utilise `Haar Cascades` pour annuler la capture si une personne regarde la caméra (évite de scanner des visages).
+2.  **Filtre de Densité de Composants (Robust Edge Density)** : *NOUVELLE MÉTHODE*. Au lieu de chercher un rectangle parfait (qui échoue souvent avec une webcam), le script isole le centre de l'image (60%) et calcule la densité des arêtes (`cv2.Canny`). Les PCB ayant énormément de petits détails (pistes, soudures, composants), si la densité dépasse 3.5%, la carte est validée et capturée instantanément !
 
-### B. Endpoint `/process-image` (Le Moteur Principal)
-Ce point d'accès gère l'analyse finale de la photo haute résolution.
-1.  **Extraction d'Informations (EasyOCR & Vision)** : Utilise un modèle de Deep Learning pour identifier les références et caractéristiques du circuit imprimé.
-2.  **Le Système de Cache Ultra-Rapide** : 
-    *   Pour éviter d'attendre à chaque scan, l'analyse est comparée aux anciens scans stockés dans `cache.json`.
-    *   Il utilise `difflib.SequenceMatcher`. Si la carte correspond à plus de 85% avec un ancien scan, le backend renvoie **instantanément** la réponse stockée sans contacter l'IA.
-3.  **Analyse de Défauts IA (ABA Fusion)** : 
-    *   S'il s'agit d'une nouvelle analyse, les données sont envoyées via un **Webhook** à *Fusion AI API*.
-    *   L'agent IA analyse le contenu et retourne les éventuels défauts de fabrication, anomalies de soudure ou composants manquants.
-    *   Le résultat est ensuite sauvegardé dans la mémoire (`cache.json`) pour les futures requêtes.
+### B. Endpoint `/process-image` (Le Moteur d'Inspection)
+Ce point d'accès gère l'analyse de la photo haute résolution capturée :
+1.  **Extraction de Métadonnées (EasyOCR)** : Détection horizontale et verticale des textes imprimés sur la carte pour identifier la référence du modèle (ex: *Arduino, NEXT-ONE*). Si aucun texte n'est détecté, le système s'adapte et poursuit l'analyse en mode "Carte Nue" ou "Analyse Purement Visuelle".
+2.  **Système de Cache Rapide** : 
+    *   Les résultats sont stockés dans `cache.json` pour économiser les requêtes. Si une carte sans texte est analysée, le cache est intelligemment désactivé pour éviter les faux positifs entre différentes cartes vierges.
+3.  **Inspection Visuelle Avancée (Dual YOLOv11 & Concurrency)** : 
+    *   L'image est envoyée **simultanément** (via `ThreadPoolExecutor`) à **DEUX** modèles IA Roboflow :
+        *   **Modèle 1** : Détection des défauts de soudure (Solder Defects).
+        *   **Modèle 2** : Détection des défauts d'assemblage (Assembly Defects, ex: composant manquant).
+4.  **Synthèse IA (Fusion AI)** : 
+    *   Si c'est un nouveau scan, les défauts aggrégés de YOLO (avec leur `model_source`) et les textes de l'OCR sont envoyés via **Webhook** à un agent LLM (Fusion AI).
+    *   Le LLM rédige un rapport qualité complet, séparant clairement les erreurs de soudure des erreurs de montage, et propose des recommandations industrielles. Le système filtre et nettoie les métadonnées techniques de Fusion (ex: *Unknown Node*) pour un affichage propre.
+
+### 🤖 Configuration Fusion AI (System Prompt)
+Pour que l'agent LLM interprète correctement la fusion des deux modèles YOLO et génère un rapport lisible par notre interface, voici le **System Prompt** exact à utiliser dans la configuration du nœud IA (Fusion) :
+
+```text
+Tu es un Ingénieur Qualité expert en électronique et un assistant IA spécialisé dans l'inspection visuelle globale des circuits imprimés (PCB).
+Ton rôle est d'analyser l'intégralité de l'image de la carte, les textes extraits (OCR), et les défauts visuels détectés par nos DEUX modèles d'Intelligence Artificielle (YOLO), afin de fournir un rapport complet d'inspection.
+
+Format de réponse attendu (réponds uniquement avec cette structure) :
+
+🔌 **Aperçu Général de la Carte :** [Décris l'ensemble de la carte]
+⚙️ **Composants Principaux :** [Liste les références lues par l'OCR]
+🔄 **Analyse des Soudures et du Montage :** [Analyse visuelle globale]
+🚫 **Anomalies Critiques et Défauts (YOLO & IA) :** [Liste les défauts détectés par YOLO. Sépare clairement les défauts détectés par le modèle de soudure (source: solder_defect) et ceux détectés par le modèle d'assemblage (source: assembly_defect). Ex: "Défaut d'assemblage : Installation incorrecte". S'il n'y en a aucun, précise-le.]
+💡 **Recommandation Finale :** [Action requise par l'opérateur]
+
+Règles strictes :
+1. Prête une attention particulière à la clé "model_source" dans les données JSON des défauts visuels pour différencier les erreurs de montage des erreurs de soudure.
+2. Analyse LA CARTE ENTIÈRE. S'il n'y a pas de texte OCR, base-toi uniquement sur l'analyse visuelle.
+3. Rédige ta réponse en français clair, technique et orienté industrie.
+4. Si l'image montre une carte nue (Bare PCB) sans aucun composant soudé ni étain, déclare immédiatement : "CARTE NUE DÉTECTÉE - Aucune inspection de soudure n'est possible", et décris uniquement la qualité des pistes et des pastilles.
+```
 
 ---
 
@@ -68,8 +94,8 @@ Ce point d'accès gère l'analyse finale de la photo haute résolution.
     ```bash
     cd frontend
     npm run dev
-    # Le dashboard tournera sur http://localhost:5173 (ou selon Vite)
+    # Le dashboard tournera sur http://localhost:5173
     ```
 
 ---
-*Ce projet démontre une intégration parfaite entre la vision par ordinateur (Computer Vision), l'apprentissage profond (Deep Learning), et l'intelligence artificielle générative (LLM Webhooks) pour le contrôle qualité industriel.*
+*Ce projet démontre une intégration robuste et en temps réel entre la vision par ordinateur (OpenCV), les modèles de détection d'objets (YOLOv11), et l'intelligence artificielle générative (LLM / Fusion AI) pour révolutionner le contrôle qualité industriel.*
