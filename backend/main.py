@@ -171,17 +171,12 @@ async def process_image(file: UploadFile = File(...)):
                     "cached": True
                 }
         
-        print("[3] Sending to ABA Fusion AI (with Base64 Image)...")
-        # Encode image to base64 for Multimodal Vision (Data URI format)
-        with open(temp_file_path, "rb") as image_file:
-            image_base64 = base64.b64encode(image_file.read()).decode('utf-8')
-            image_data_uri = f"data:image/jpeg;base64,{image_base64}"
+        print("[3] Sending to ABA Fusion AI (Text only)...")
             
         payload = {
             "event": "pcb_scan",
             "document_name": file.filename,
             "extracted_content": extracted_text,
-            "image_base64": image_data_uri,
             "timestamp": datetime.now().isoformat()
         }
         
