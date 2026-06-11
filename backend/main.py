@@ -5,6 +5,7 @@ import requests
 import cv2
 import numpy as np
 import difflib
+import base64
 from datetime import datetime
 from fastapi import FastAPI, UploadFile, File, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
@@ -131,14 +132,29 @@ async def process_image(file: UploadFile = File(...)):
         shutil.copyfileobj(file.file, buffer)
         
     try:
-        print("[1] Processing image and detecting text using EasyOCR...")
-        result = reader.readtext(temp_file_path, detail=0, paragraph=True)
-        extracted_text = "\n".join(result).strip()
+        print("[1] Processing image and detecting text using EasyOCR (Horizontal & Vertical)...")
+        # 1. Normal OCR
+        result_h = reader.readtext(temp_file_path, detail=0, paragraph=True)
+        text_h = "\n".join(result_h).strip()
+        
+        # 2. Vertical OCR
+        img = cv2.imread(temp_file_path)
+        if img is not None:
+            rotated = cv2.rotate(img, cv2.ROTATE_90_CLOCKWISE)
+            rotated_path = f"rotated_{temp_file_path}"
+            cv2.imwrite(rotated_path, rotated)
+            result_v = reader.readtext(rotated_path, detail=0, paragraph=True)
+            text_v = "\n".join(result_v).strip()
+            os.remove(rotated_path)
+        else:
+            text_v = ""
+            
+        extracted_text = f"{text_h}\n{text_v}".strip()
         
         if len(extracted_text) < 5:
             return {"error": "No clear text found in the image."}
             
-        print(f"[2] Extracted Text:\n{extracted_text}\n")
+        print(f"[2] Extracted Text (Combined):\n{extracted_text}\n")
         
         # --- CACHING LOGIC ---
         cache_data = load_cache()
@@ -155,11 +171,16 @@ async def process_image(file: UploadFile = File(...)):
                     "cached": True
                 }
         
-        print("[3] Sending to ABA Fusion AI...")
+        print("[3] Sending to ABA Fusion AI (with Base64 Image)...")
+        # Encode image to base64 for Multimodal Vision
+        with open(temp_file_path, "rb") as image_file:
+            image_base64 = base64.b64encode(image_file.read()).decode('utf-8')
+            
         payload = {
             "event": "pcb_scan",
             "document_name": file.filename,
             "extracted_content": extracted_text,
+            "image_base64": image_base64,
             "timestamp": datetime.now().isoformat()
         }
         
@@ -183,7 +204,9 @@ async def process_image(file: UploadFile = File(...)):
         try:
             response = session.post(FUSION_WEBHOOK_URL, data=json.dumps(payload), headers=headers, timeout=60)
         except requests.exceptions.RequestException as e:
-            return {"error": f"Fusion Server Connection Error: {str(e)}"}
+            if "too many 504 error responses" in str(e) or "Gateway Timeout" in str(e):
+                return {"error": "Le serveur d'IA (Fusion AI) est actuellement surchargé ou indisponible (Erreur 504). Veuillez réessayer plus tard."}
+            return {"error": f"Erreur de connexion au serveur Fusion : {str(e)}"}
         
         if response.status_code in [200, 201]:
             try:
