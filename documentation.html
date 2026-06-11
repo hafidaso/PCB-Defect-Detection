@@ -1,0 +1,374 @@
+<!DOCTYPE html>
+<html lang="fr">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MediScan - Documentation</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet"
+        href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/styles/atom-one-dark.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/highlight.min.js"></script>
+    <script>hljs.highlightAll();</script>
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background: linear-gradient(135deg, #f8fafc 0%, #ecfdf5 100%);
+            color: #1e293b;
+        }
+
+        .glass-card {
+            background: rgba(255, 255, 255, 0.7);
+            backdrop-filter: blur(16px);
+            border: 1px solid rgba(255, 255, 255, 0.5);
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.05);
+        }
+
+        @media print {
+            body {
+                background: white !important;
+                color: black !important;
+            }
+
+            .glass-card {
+                background: white !important;
+                border: 1px solid #e2e8f0 !important;
+                box-shadow: none !important;
+                page-break-inside: avoid;
+            }
+
+            pre,
+            code,
+            .rounded-xl {
+                page-break-inside: avoid !important;
+                break-inside: avoid !important;
+            }
+
+            h2,
+            h3 {
+                page-break-after: avoid !important;
+                break-after: avoid !important;
+            }
+
+            img {
+                max-width: 100% !important;
+                page-break-inside: avoid !important;
+            }
+
+            .shadow-lg,
+            .shadow-md {
+                box-shadow: none !important;
+            }
+
+            .text-transparent {
+                color: #0f766e !important;
+                background: none !important;
+                -webkit-text-fill-color: #0f766e !important;
+            }
+        }
+    </style>
+</head>
+
+<body class="min-h-screen py-12 px-4 sm:px-6 lg:px-8">
+
+    <div class="max-w-5xl mx-auto">
+        <!-- Header -->
+        <header class="text-center mb-16">
+            <div class="mb-6 flex justify-center">
+                <img src="glfmZ18HjK28FyARiQJNDHHx0.svg" alt="MediScan Logo" class="h-24 w-auto drop-shadow-md">
+            </div>
+            <h1
+                class="text-5xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-emerald-600 to-teal-600 mb-4 tracking-tight">
+                MediScan Lab</h1>
+            <p class="text-xl text-slate-500 max-w-2xl mx-auto">Documentation du système intelligent de numérisation et
+                d'analyse des médicaments.</p>
+
+            <div
+                class="mt-8 flex justify-center items-center space-x-2 text-sm font-medium text-slate-500 bg-white/50 inline-flex px-6 py-2 rounded-full shadow-sm border border-slate-200">
+                <span>Créé par</span>
+                <span
+                    class="text-transparent bg-clip-text bg-gradient-to-r from-emerald-500 to-teal-500 font-bold ml-1 text-base">Hafida
+                    Belayd</span>
+            </div>
+        </header>
+
+        <!-- Dashboard Screenshot -->
+        <div class="mb-12 rounded-2xl overflow-hidden shadow-xl shadow-emerald-900/5 border border-slate-200">
+            <img src="dashboard_screenshot.jpg" alt="MediScan Dashboard Overview"
+                class="w-full object-cover hover:scale-[1.01] transition-transform duration-700">
+        </div>
+
+        <!-- Architecture -->
+        <section class="glass-card rounded-3xl p-8 mb-10 transition hover:shadow-xl duration-300">
+            <h2 class="text-2xl font-bold text-slate-800 mb-6 flex items-center">
+                <span class="bg-blue-100 text-blue-600 p-2 rounded-lg mr-4">🏗️</span>
+                Architecture Globale
+            </h2>
+            <p class="text-slate-600 leading-relaxed mb-4">Le projet s'appuie sur une architecture moderne séparant
+                l'interface utilisateur de la logique serveur lourde :</p>
+            <ul class="space-y-3 text-slate-700">
+                <li class="flex items-start">
+                    <svg class="w-6 h-6 text-emerald-500 mr-2 shrink-0" fill="none" stroke="currentColor"
+                        viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                    </svg>
+                    <strong>Frontend (Dashboard) :</strong> React.js, Vite, TailwindCSS.
+                </li>
+                <li class="flex items-start">
+                    <svg class="w-6 h-6 text-emerald-500 mr-2 shrink-0" fill="none" stroke="currentColor"
+                        viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                    </svg>
+                    <strong>Backend (API) :</strong> Python, FastAPI, OpenCV, EasyOCR.
+                </li>
+            </ul>
+        </section>
+
+        <!-- Frontend Workflow Explanation -->
+        <section class="glass-card rounded-3xl p-8 mb-10 transition hover:shadow-xl duration-300">
+            <h2 class="text-2xl font-bold text-slate-800 mb-6 flex items-center">
+                <span class="bg-blue-100 text-blue-600 p-2 rounded-lg mr-4">🖥️</span>
+                Le Flux de l'Interface (Frontend)
+            </h2>
+            <p class="text-slate-600 leading-relaxed mb-6">L'interface React orchestre le processus de capture en temps
+                réel avec une expérience fluide. Voici comment la magie opère côté client :</p>
+
+            <div class="relative pl-8 border-l-2 border-blue-300 space-y-8">
+                <!-- Step 1 -->
+                <div class="relative">
+                    <span
+                        class="absolute -left-[41px] bg-blue-500 text-white w-8 h-8 rounded-full flex items-center justify-center font-bold shadow-md">1</span>
+                    <h3 class="font-bold text-slate-800 text-lg">Activation de la Caméra</h3>
+                    <p class="text-sm text-slate-600 mt-1">L'utilisateur autorise l'accès à sa caméra (via
+                        <code>navigator.mediaDevices</code>). Le flux vidéo s'affiche en direct avec une animation de
+                        scanner "laser".
+                    </p>
+                </div>
+
+                <!-- Step 2 -->
+                <div class="relative">
+                    <span
+                        class="absolute -left-[41px] bg-blue-500 text-white w-8 h-8 rounded-full flex items-center justify-center font-bold shadow-md">2</span>
+                    <h3 class="font-bold text-slate-800 text-lg">Boucle de Vérification Silencieuse (Auto-Capture)</h3>
+                    <p class="text-sm text-slate-600 mt-1">Toutes les secondes, le Dashboard capture une image depuis la
+                        vidéo via un <em>Canvas HTML</em> caché et l'envoie au filtre intelligent du backend
+                        (<code>/detect-box</code>) pour voir si un médicament est devant la lentille.</p>
+                </div>
+
+                <!-- Step 3 -->
+                <div class="relative">
+                    <span
+                        class="absolute -left-[41px] bg-blue-500 text-white w-8 h-8 rounded-full flex items-center justify-center font-bold shadow-md">3</span>
+                    <h3 class="font-bold text-slate-800 text-lg">Validation et Envoi à l'IA</h3>
+                    <p class="text-sm text-slate-600 mt-1">Si le serveur valide l'image (<code>detected: true</code>),
+                        la boucle s'arrête ! La caméra se met en pause, et la photo est immédiatement envoyée au moteur
+                        principal (<code>/process-image</code>) pour lancer l'OCR et consulter ABA Fusion AI.</p>
+                </div>
+
+                <!-- Step 4 -->
+                <div class="relative">
+                    <span
+                        class="absolute -left-[41px] bg-blue-500 text-white w-8 h-8 rounded-full flex items-center justify-center font-bold shadow-md">4</span>
+                    <h3 class="font-bold text-slate-800 text-lg">Affichage des Résultats</h3>
+                    <p class="text-sm text-slate-600 mt-1">Le résultat médical est affiché à l'écran. Si le système
+                        Python indique qu'il l'a trouvé dans sa mémoire (Cache), l'interface React déclenche
+                        dynamiquement un badge visuel <strong>CACHE HIT ⚡</strong>. L'utilisateur peut ensuite appuyer
+                        sur la corbeille pour scanner un nouveau médicament.</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- Backend Code Snippets -->
+        <section class="glass-card rounded-3xl p-8 mb-10 transition hover:shadow-xl duration-300">
+            <h2 class="text-2xl font-bold text-slate-800 mb-6 flex items-center">
+                <span class="bg-teal-100 text-teal-600 p-2 rounded-lg mr-4">⚙️</span>
+                Détails du Backend (main.py)
+            </h2>
+            <p class="text-slate-600 mb-6">Le fichier <code>main.py</code> contient toute la logique complexe du
+                système. Voici les 5 composants majeurs que nous y avons programmés :</p>
+
+            <!-- Detail 1: EasyOCR & SSL -->
+            <h3 class="text-lg font-bold text-slate-700 mb-2">1. Intégration d'EasyOCR et correction SSL</h3>
+            <p class="text-sm text-slate-500 mb-3">Nous utilisons le modèle Deep Learning <strong>EasyOCR</strong>. Pour
+                permettre le téléchargement des poids du modèle sur macOS sans erreur de certificat, nous avons ajouté
+                un bypass SSL sécurisé pour le contexte local.</p>
+            <div class="rounded-xl overflow-hidden mb-6 shadow-md text-sm border border-slate-200">
+                <pre><code class="language-python">import easyocr
+import ssl
+
+# Correction de l'erreur SSL sur Mac pour le téléchargement des modèles
+try:
+    _create_unverified_https_context = ssl._create_unverified_context
+except AttributeError:
+    pass
+else:
+    ssl._create_default_https_context = _create_unverified_https_context
+
+# Initialisation du modèle OCR bilingue (Français, Anglais)
+reader = easyocr.Reader(['fr', 'en'])
+</code></pre>
+            </div>
+
+            <!-- Detail 2: CORS -->
+            <h3 class="text-lg font-bold text-slate-700 mb-2">2. Configuration CORS (FastAPI)</h3>
+            <p class="text-sm text-slate-500 mb-3">Pour que l'application React (port 5173) puisse communiquer avec
+                l'API Python (port 8000), le middleware CORS a été configuré.</p>
+            <div class="rounded-xl overflow-hidden mb-6 shadow-md text-sm border border-slate-200">
+                <pre><code class="language-python">app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"], # Accepte les requêtes du Dashboard
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+</code></pre>
+            </div>
+
+            <!-- Detail 3: Detect Box -->
+            <h3 class="text-lg font-bold text-slate-700 mb-2">3. Les Filtres d'Intelligence Visuelle
+                <code>/detect-box</code>
+            </h3>
+            <p class="text-sm text-slate-500 mb-3">Ce code empêche la caméra de prendre des visages ou des murs vides en
+                photo. Il exige une forme rectangulaire AVEC du texte à l'intérieur.</p>
+            <div class="rounded-xl overflow-hidden mb-6 shadow-md text-sm border border-slate-200">
+                <pre><code class="language-python">@app.post("/detect-box")
+async def detect_box(file: UploadFile = File(...)):
+    # 1. Filtre Anti-Personne (Rejette si un visage occupe >10% de l'image)
+    face_cascade = cv2.CascadeClassifier(cv2.data.haarcascades + 'haarcascade_frontalface_default.xml')
+    faces = face_cascade.detectMultiScale(gray, scaleFactor=1.1, minNeighbors=5, minSize=(100, 100))
+    if len(faces) > 0 and (faces[0][2] * faces[0][3] > frame_area * 0.10):
+        return {"detected": False} 
+
+    # 2. Filtre Géométrique et Densité (Doit être un grand rectangle avec du texte)
+    contours, _ = cv2.findContours(edged, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+    for c in contours[:3]:
+        approx = cv2.approxPolyDP(c, 0.05 * cv2.arcLength(c, True), True)
+        
+        if len(approx) == 4 and cv2.contourArea(approx) > 15000:
+            x, y, w, h = cv2.boundingRect(approx)
+            roi = edged[y:y+h, x:x+w]
+            
+            # Densité des arêtes (Texte) > 3%
+            density = cv2.countNonZero(roi) / float(w * h)
+            if density > 0.03:
+                return {"detected": True} # Boîte de médicament validée !
+</code></pre>
+            </div>
+
+            <!-- Detail 4: Caching -->
+            <h3 class="text-lg font-bold text-slate-700 mb-2">4. Le Système de Mémoire Ultra-Rapide (Cache)</h3>
+            <p class="text-sm text-slate-500 mb-3">Une fois l'image validée et traitée par <code>/process-image</code>,
+                ce système compare le texte scanné avec l'historique pour éviter de rappeler l'IA inutilement si le
+                médicament a déjà été analysé.</p>
+            <div class="rounded-xl overflow-hidden mb-6 shadow-md text-sm border border-slate-200">
+                <pre><code class="language-python">extracted_text = reader.readtext(temp_file_path, detail=0, paragraph=True)
+cleaned_extracted = clean_text(extracted_text) # Nettoyage du bruit OCR
+
+# Recherche de similarité (Tolérance de 15% d'erreur OCR)
+for key, cached_analysis in cache_data.items():
+    similarity = difflib.SequenceMatcher(None, cleaned_extracted, key).ratio()
+    if similarity > 0.85:
+        print("[CACHE HIT] Correspondance trouvée !")
+        return {
+            "ai_response": cached_analysis,
+            "cached": True
+        }
+</code></pre>
+            </div>
+
+            <!-- Detail 5: Webhook -->
+            <h3 class="text-lg font-bold text-slate-700 mb-2">5. Communication avec ABA Fusion AI</h3>
+            <p class="text-sm text-slate-500 mb-3">Si l'image n'est pas dans le cache, le serveur prépare les données et
+                appelle le Webhook externe pour obtenir l'analyse médicale.</p>
+            <div class="rounded-xl overflow-hidden shadow-md text-sm border border-slate-200">
+                <pre><code class="language-python"># Préparation du JSON
+payload = {
+    "event": "medicine_scan",
+    "document_name": file.filename,
+    "extracted_content": extracted_text,
+    "timestamp": datetime.now().isoformat()
+}
+
+# Envoi de la requête au système Fusion AI
+response = requests.post(FUSION_WEBHOOK_URL, data=json.dumps(payload), headers={"Content-Type": "application/json"})
+
+if response.status_code in [200, 201]:
+    ai_result = response.json().get("ai_analysis")
+    
+    # Sauvegarde dans le cache local pour la prochaine fois
+    cache_data[cleaned_extracted] = ai_result
+    save_cache(cache_data)
+    
+    return {"ai_response": ai_result, "cached": False}
+</code></pre>
+            </div>
+        </section>
+
+        <!-- Fusion AI Workflow Explanation -->
+        <section class="glass-card rounded-3xl p-8 mb-10 transition hover:shadow-xl duration-300">
+            <h2 class="text-2xl font-bold text-slate-800 mb-6 flex items-center">
+                <span class="bg-purple-100 text-purple-600 p-2 rounded-lg mr-4">🤖</span>
+                Le Workflow de ABA Fusion AI
+            </h2>
+            <p class="text-slate-600 leading-relaxed mb-6">Lorsque le backend Python identifie une
+                <strong>nouvelle</strong> boîte de médicament, il envoie le texte brut extrait par OCR vers la
+                plateforme <strong>ABA Fusion AI</strong>. Le fichier JSON du workflow montre comment cette plateforme
+                traite la requête :
+            </p>
+
+            <div class="mb-10 rounded-2xl overflow-hidden border border-purple-200 shadow-lg shadow-purple-900/10">
+                <img src="workflow_screenshot.jpg" alt="ABA Fusion AI Workflow"
+                    class="w-full object-cover hover:scale-[1.02] transition-transform duration-700">
+            </div>
+
+            <div class="relative pl-8 border-l-2 border-purple-300 space-y-8">
+                <!-- Step 1 -->
+                <div class="relative">
+                    <span
+                        class="absolute -left-[41px] bg-purple-500 text-white w-8 h-8 rounded-full flex items-center justify-center font-bold shadow-md">1</span>
+                    <h3 class="font-bold text-slate-800 text-lg">Webhook Trigger <code>/process-image</code></h3>
+                    <p class="text-sm text-slate-600 mt-1">Le workflow écoute les requêtes HTTP entrantes (POST). Dès
+                        que notre code Python envoie le texte brut via la requête `requests.post`, ce nœud s'active et
+                        capte la donnée.</p>
+                </div>
+
+                <!-- Step 2 -->
+                <div class="relative">
+                    <span
+                        class="absolute -left-[41px] bg-purple-500 text-white w-8 h-8 rounded-full flex items-center justify-center font-bold shadow-md">2</span>
+                    <h3 class="font-bold text-slate-800 text-lg">L'Agent IA (Pharmacien Expert)</h3>
+                    <p class="text-sm text-slate-600 mt-1">C'est le cœur de l'analyse ! Ce nœud reçoit les données et
+                        utilise le modèle de langage <strong>Google LLM (gemini-3-flash-preview)</strong>. Il est
+                        programmé avec un <em>System Prompt</em> très strict :</p>
+                    <div
+                        class="bg-purple-50/50 p-4 mt-3 rounded-xl border border-purple-100 italic text-slate-700 text-sm">
+                        "Tu es un pharmacien expert... Ton rôle est d'analyser le texte brut (avec fautes d'OCR) et de
+                        déduire le médicament. Formate ta réponse exactement avec : 💊 Médicament détecté, 🔬 Principe
+                        actif, ⚠️ Effets secondaires, 🚫 Contre-indications, 💡 Conseil."
+                    </div>
+                </div>
+
+                <!-- Step 3 -->
+                <div class="relative">
+                    <span
+                        class="absolute -left-[41px] bg-purple-500 text-white w-8 h-8 rounded-full flex items-center justify-center font-bold shadow-md">3</span>
+                    <h3 class="font-bold text-slate-800 text-lg">Réponse Webhook (Respond to Webhook)</h3>
+                    <p class="text-sm text-slate-600 mt-1">Une fois que l'Agent a généré l'analyse médicale formatée et
+                        sécurisée, ce dernier nœud prend le résultat et le renvoie à notre serveur Python avec le code
+                        HTTP <code>200</code>. Le Python le transmet ensuite au Dashboard React pour l'afficher à
+                        l'utilisateur.</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- Footer -->
+        <footer class="text-center text-slate-400 text-sm mt-12 pb-8">
+            <p>&copy; 2026 MediScan Lab. Tous droits réservés.</p>
+            <p class="mt-2">Développé avec la pile technique React & Python FastAPI.</p>
+        </footer>
+    </div>
+
+</body>
+
+</html>

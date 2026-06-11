@@ -1,0 +1,23 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+env/
+venv/
+.env
+
+# Node
+node_modules/
+dist/
+.DS_Store
+
+# OS
+.DS_Store
+
+# Images/Data
+*.heic
+*.jpg
+
+# Secrets and Cache
+Medscan-*.json
+backend/cache.json
