@@ -5,3 +5,5 @@ opencv-python
 easyocr
 requests
 websockets
+paho-mqtt
+ultralytics

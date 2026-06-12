@@ -11,6 +11,33 @@ from fastapi import FastAPI, UploadFile, File, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
 import easyocr
 import ssl
+import paho.mqtt.client as mqtt
+
+try:
+    from ultralytics import YOLO
+    local_yolo_model = YOLO("best.pt")
+    print("Local YOLO model 'best.pt' loaded successfully.")
+except Exception as e:
+    local_yolo_model = None
+    print(f"Warning: Could not load local YOLO model 'best.pt': {e}")
+
+def send_mqtt_status(has_defect):
+    try:
+        client = mqtt.Client(client_id="fastapi_backend_pcb", protocol=mqtt.MQTTv311)
+        client.username_pw_set("hivemq.webclient.1775653497883", "1B%.CwaP:Kdr2I93k*Ap")
+        client.tls_set(cert_reqs=ssl.CERT_NONE)
+        client.connect("ac6ac8bb96e444b3b796a80e83455529.s1.eu.hivemq.cloud", 8883, 60)
+        
+        client.loop_start() # البدأ في حلقة الاتصال لإرسال البيانات فعلياً
+        msg = "DEFECT" if has_defect else "OK"
+        info = client.publish("hafida/robot/twin/command", msg, qos=1)
+        info.wait_for_publish() # الانتظار حتى يتم إرسال الرسالة بنجاح
+        client.disconnect()
+        client.loop_stop()
+        
+        print(f"   -> [MQTT] Status '{msg}' sent to ESP32 successfully.")
+    except Exception as e:
+        print(f"   -> [MQTT] Failed to send status: {e}")
 
 # Fix SSL Certificate Error on Mac
 try:
@@ -195,6 +222,7 @@ async def process_image(file: UploadFile = File(...)):
                         ai_response = cached_analysis.get("ai_analysis", "") if isinstance(cached_analysis, dict) else cached_analysis
                         predictions = cached_analysis.get("predictions", []) if isinstance(cached_analysis, dict) else []
                         
+                        send_mqtt_status(len(predictions) > 0)
                         return {
                             "ocr_text": extracted_text,
                             "ocr_details": ocr_details,
@@ -204,9 +232,39 @@ async def process_image(file: UploadFile = File(...)):
                             "cached": True
                         }
         
-        print("[3] Calling Roboflow Models (Solder & Assembly Defects) concurrently...")
+        print("[3] Calling Roboflow Models and Local YOLO Model concurrently...")
         roboflow_predictions = []
         ROBOFLOW_API_KEY = os.environ.get("ROBOFLOW_API_KEY", "ETd6Ky2lUXN8CmqrVr3B")
+        
+        # --- LOCAL YOLO MODEL INFERENCE ---
+        if local_yolo_model:
+            try:
+                print("   -> Running Local YOLO Model...")
+                results = local_yolo_model(temp_file_path)
+                for r in results:
+                    for box in r.boxes:
+                        x, y, w, h = box.xywh[0].tolist()
+                        conf = float(box.conf[0])
+                        cls_id = int(box.cls[0])
+                        class_name = local_yolo_model.names[cls_id]
+                        
+                        # تجاهل الكلاس "PCB" لأنه يمثل اللوحة نفسها وليس عيباً
+                        if class_name.lower() == "pcb":
+                            continue
+                            
+                        roboflow_predictions.append({
+                            "x": x,
+                            "y": y,
+                            "width": w,
+                            "height": h,
+                            "class": class_name,
+                            "confidence": conf,
+                            "model_source": "local_best_pt"
+                        })
+                print(f"   -> Local YOLO found defects.")
+            except Exception as e:
+                print(f"   -> Error running local YOLO model: {e}")
+
         
         if ROBOFLOW_API_KEY:
             try:
@@ -315,6 +373,7 @@ async def process_image(file: UploadFile = File(...)):
                     f"Erreur technique : `{str(e)[:120]}`\n\n"
                     "💡 Réessayez dans quelques instants."
                 )
+                send_mqtt_status(len(roboflow_predictions) > 0)
                 return {
                     "ocr_text": extracted_text,
                     "ocr_details": ocr_details,
@@ -362,6 +421,7 @@ async def process_image(file: UploadFile = File(...)):
                 cache_data[cleaned_extracted] = {"ai_analysis": ai_result, "predictions": predictions}
                 save_cache(cache_data)
 
+            send_mqtt_status(len(predictions) > 0)
             return {
                 "ocr_text": extracted_text,
                 "ocr_details": ocr_details,
@@ -379,6 +439,7 @@ async def process_image(file: UploadFile = File(...)):
                 "Les annotations visuelles YOLO restent valides.\n\n"
                 "💡 Réessayez dans quelques instants pour l'analyse complète."
             )
+            send_mqtt_status(len(roboflow_predictions) > 0)
             return {
                 "ocr_text": extracted_text,
                 "ocr_details": ocr_details,

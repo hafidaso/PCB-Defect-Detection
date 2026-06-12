@@ -266,6 +266,7 @@ const PCBScanDashboard = ({ onNavigate }) => {
     }
     setStreamObj(null);
     setIsCameraActive(false);
+    isProcessingRef.current = false; // <-- FIX: Reset the lock when camera stops
     if (detectionInterval.current) {
       clearInterval(detectionInterval.current);
     }
@@ -571,15 +572,22 @@ const PCBScanDashboard = ({ onNavigate }) => {
               )}
               
               <button 
-                onClick={() => processImage()}
+                onClick={(e) => {
+                  e.preventDefault();
+                  if (isCameraActive) {
+                    captureFrame(true);
+                  } else {
+                    processImage();
+                  }
+                }}
                 className={`relative overflow-hidden w-full py-4 rounded-2xl font-bold text-lg transition-all duration-500 flex justify-center items-center mb-8 group ${
-                  !imageFile || loading || isCameraActive
+                  (!imageFile && !isCameraActive) || loading
                   ? 'bg-slate-100 text-slate-400 shadow-none cursor-not-allowed border border-slate-200/60' 
                   : 'bg-slate-900 text-white hover:bg-slate-800 hover:shadow-[0_20px_40px_-15px_rgba(0,0,0,0.3)] hover:-translate-y-1'
                 }`}
-                disabled={!imageFile || loading || isCameraActive}
+                disabled={(!imageFile && !isCameraActive) || loading}
               >
-                {!imageFile && !loading && !isCameraActive && (
+                {((imageFile || isCameraActive) && !loading) && (
                   <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000"></div>
                 )}
                 {loading ? (

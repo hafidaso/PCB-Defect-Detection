@@ -10,7 +10,7 @@ Bienvenue dans la documentation officielle de **PCBScan**, une application web i
 
 Le projet est divisé en deux parties principales interconnectées :
 1. **Frontend (Dashboard)** : SPA construite avec React.js, Vite, TailwindCSS et Recharts.
-2. **Backend (API)** : Construit avec Python, FastAPI, OpenCV, EasyOCR, et intégration Webhook (Fusion AI) couplée à un système multi-modèles (Dual YOLOv11).
+2. **Backend (API)** : Construit avec Python, FastAPI, OpenCV, EasyOCR, et intégration Webhook (Fusion AI) couplée à un système tri-modèles (Local YOLOv11 + Dual Roboflow). Intégration IoT avec MQTT (HiveMQ) pour communiquer avec un ESP32 (LED, Buzzer, LCD).
 
 ---
 
@@ -24,10 +24,11 @@ Le tableau de bord a été conçu avec une approche **"Premium Glassmorphism"** 
 *   **Upload Manuel** : Possibilité de télécharger une image depuis votre ordinateur.
 *   **Historique des Sessions** : Une page dédiée pour retrouver toutes les inspections passées avec recherche, filtres, et une **Fenêtre Modale (Popup)** détaillée affichant l'analyse IA complète de chaque carte.
 *   **Rendu Visuel Différencié (BBoxes)** : Les défauts de soudure (Short, Missing Solder) sont surlignés en Rouge/Orange, tandis que les défauts de montage (Missing Component, Misaligned) sont surlignés en Violet pour une identification visuelle instantanée.
-*   **Vision par Ordinateur (Dual YOLOv11)** : L'image est envoyée de manière concurrente (en parallèle) vers deux modèles hébergés sur Roboflow :
-    *   **Solder Defects Model** : `pcb-solder-defect-detection-hn1sk-zdmoz`
-    *   **Assembly Defects Model** : `defects-2q87r-0lwnp`
-    *   Les résultats (Bounding Boxes, Confiance, Classe) sont fusionnés et un tag `model_source` est injecté pour tracer l'origine de chaque défaut.
+*   **Vision par Ordinateur (Tri-Model Architecture)** : L'image est traitée par trois modèles fonctionnant en synergie :
+    *   **Local YOLO Model (`best.pt`)** : S'exécute directement sur le serveur via `ultralytics` pour une détection ultra-rapide des défauts (le modèle ignore intelligemment la classe `PCB` pour éviter de marquer la carte entière comme un défaut).
+    *   **Solder Defects Model (Roboflow)** : `pcb-solder-defect-detection-hn1sk-zdmoz`
+    *   **Assembly Defects Model (Roboflow)** : `defects-2q87r-0lwnp`
+    *   Les résultats (Bounding Boxes, Confiance, Classe) sont fusionnés et un tag `model_source` (ex: `local_best_pt` ou `solder_defect`) est injecté pour tracer l'origine de chaque défaut.
 *   **Indicateurs Visuels & Statistiques** :
     *   Graphique circulaire (PieChart via Recharts) montrant le ratio des cartes saines vs défectueuses.
     *   Bouton **Exporter Rapport PDF** pour télécharger la synthèse complète.
@@ -49,11 +50,13 @@ Ce point d'accès gère l'analyse de la photo haute résolution capturée :
 1.  **Extraction de Métadonnées (EasyOCR)** : Détection horizontale et verticale des textes imprimés sur la carte pour identifier la référence du modèle (ex: *Arduino, NEXT-ONE*). Si aucun texte n'est détecté, le système s'adapte et poursuit l'analyse en mode "Carte Nue" ou "Analyse Purement Visuelle".
 2.  **Système de Cache Rapide** : 
     *   Les résultats sont stockés dans `cache.json` pour économiser les requêtes. Si une carte sans texte est analysée, le cache est intelligemment désactivé pour éviter les faux positifs entre différentes cartes vierges.
-3.  **Inspection Visuelle Avancée (Dual YOLOv11 & Concurrency)** : 
-    *   L'image est envoyée **simultanément** (via `ThreadPoolExecutor`) à **DEUX** modèles IA Roboflow :
-        *   **Modèle 1** : Détection des défauts de soudure (Solder Defects).
-        *   **Modèle 2** : Détection des défauts d'assemblage (Assembly Defects, ex: composant manquant).
-4.  **Synthèse IA (Fusion AI)** : 
+3.  **Inspection Visuelle Avancée (Local YOLO & Roboflow Concurrency)** : 
+    *   **Inférence Locale** : Exécution immédiate du modèle personnalisé `best.pt` via la librairie `ultralytics`.
+    *   **Inférence Cloud** : L'image est envoyée **simultanément** (via `ThreadPoolExecutor`) à **DEUX** modèles IA Roboflow (Solder Defects & Assembly Defects).
+4.  **Internet of Things (IoT) & MQTT** :
+    *   En fonction des résultats de l'IA (présence ou absence de défauts), le backend se connecte à un broker public **HiveMQ Cloud** (`paho-mqtt`) et publie un message (`DEFECT` ou `OK`) sur le topic `hafida/robot/twin/command`.
+    *   Ce message est intercepté par un microcontrôleur **ESP32** (programmé en C++) qui active physiquement une LED rouge, un Buzzer d'alerte, et affiche le statut d'erreur sur un écran LCD I2C.
+5.  **Synthèse IA (Fusion AI)** : 
     *   Si c'est un nouveau scan, les défauts aggrégés de YOLO (avec leur `model_source`) et les textes de l'OCR sont envoyés via **Webhook** à un agent LLM (Fusion AI).
     *   Le LLM rédige un rapport qualité complet, séparant clairement les erreurs de soudure des erreurs de montage, et propose des recommandations industrielles. Le système filtre et nettoie les métadonnées techniques de Fusion (ex: *Unknown Node*) pour un affichage propre.
 
@@ -62,14 +65,14 @@ Pour que l'agent LLM interprète correctement la fusion des deux modèles YOLO e
 
 ```text
 Tu es un Ingénieur Qualité expert en électronique et un assistant IA spécialisé dans l'inspection visuelle globale des circuits imprimés (PCB).
-Ton rôle est d'analyser l'intégralité de l'image de la carte, les textes extraits (OCR), et les défauts visuels détectés par nos DEUX modèles d'Intelligence Artificielle (YOLO), afin de fournir un rapport complet d'inspection.
+Ton rôle est d'analyser l'intégralité de l'image de la carte, les textes extraits (OCR), et les défauts visuels détectés par nos TROIS modèles d'Intelligence Artificielle (YOLO local et cloud), afin de fournir un rapport complet d'inspection.
 
 Format de réponse attendu (réponds uniquement avec cette structure) :
 
 🔌 **Aperçu Général de la Carte :** [Décris l'ensemble de la carte]
 ⚙️ **Composants Principaux :** [Liste les références lues par l'OCR]
 🔄 **Analyse des Soudures et du Montage :** [Analyse visuelle globale]
-🚫 **Anomalies Critiques et Défauts (YOLO & IA) :** [Liste les défauts détectés par YOLO. Sépare clairement les défauts détectés par le modèle de soudure (source: solder_defect) et ceux détectés par le modèle d'assemblage (source: assembly_defect). Ex: "Défaut d'assemblage : Installation incorrecte". S'il n'y en a aucun, précise-le.]
+🚫 **Anomalies Critiques et Défauts (YOLO & IA) :** [Liste les défauts détectés par YOLO. Sépare clairement les défauts détectés par le modèle local (source: local_best_pt), le modèle de soudure (source: solder_defect) et le modèle d'assemblage (source: assembly_defect). Ex: "Défaut d'assemblage : Installation incorrecte". S'il n'y en a aucun, précise-le.]
 💡 **Recommandation Finale :** [Action requise par l'opérateur]
 
 Règles strictes :
