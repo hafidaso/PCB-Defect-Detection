@@ -55,6 +55,8 @@ const PCBScanDashboard = ({ onNavigate }) => {
   const [isExporting, setIsExporting] = useState(false);
   const [arMode, setArMode] = useState(false);
   const [yoloPredictions, setYoloPredictions] = useState(null);
+  const [countdown, setCountdown] = useState(null);
+  const countdownInterval = useRef(null);
 
   const parsedData = parseAiResponse(aiResponse);
   const dashboardRef = useRef(null);
@@ -252,9 +254,27 @@ const PCBScanDashboard = ({ onNavigate }) => {
       wsRef.current.onmessage = (event) => {
         const data = JSON.parse(event.data);
         if (data.detected && !isProcessingRef.current) {
-          isProcessingRef.current = true;
-          // Si le backend détecte un PCB, capturer manuellement l'image et stopper
-          captureFrame(true);
+          if (!countdownInterval.current) {
+            setCountdown(3);
+            countdownInterval.current = setInterval(() => {
+              setCountdown((prev) => {
+                if (prev <= 1) {
+                  clearInterval(countdownInterval.current);
+                  countdownInterval.current = null;
+                  isProcessingRef.current = true;
+                  setTimeout(() => captureFrame(true), 0);
+                  return null;
+                }
+                return prev - 1;
+              });
+            }, 1000);
+          }
+        } else if (!data.detected) {
+          if (countdownInterval.current) {
+            clearInterval(countdownInterval.current);
+            countdownInterval.current = null;
+            setCountdown(null);
+          }
         }
       };
     } catch (err) {
@@ -279,6 +299,11 @@ const PCBScanDashboard = ({ onNavigate }) => {
     isProcessingRef.current = false; // <-- FIX: Reset the lock when camera stops
     if (detectionInterval.current) {
       clearInterval(detectionInterval.current);
+    }
+    if (countdownInterval.current) {
+      clearInterval(countdownInterval.current);
+      countdownInterval.current = null;
+      setCountdown(null);
     }
     if (wsRef.current) {
       wsRef.current.close();
@@ -503,6 +528,11 @@ const PCBScanDashboard = ({ onNavigate }) => {
               {isCameraActive ? (
                 <div className={`mb-6 relative rounded-2xl overflow-hidden border-[3px] shadow-lg ${arMode ? 'border-red-500 shadow-red-500/30' : 'border-emerald-400 shadow-emerald-400/30'} bg-slate-900`}>
                   <video ref={videoRef} autoPlay playsInline className={`w-full h-56 object-cover ${arMode ? 'opacity-80 mix-blend-screen' : 'opacity-90'}`}></video>
+                  {countdown !== null && (
+                    <div className="absolute inset-0 flex items-center justify-center bg-slate-900/50 z-20 rounded-xl backdrop-blur-sm">
+                      <span className="text-white text-7xl font-black animate-pulse drop-shadow-2xl">{countdown}</span>
+                    </div>
+                  )}
                   {/* Scanning Animation Overlay */}
                   <div className={`absolute inset-0 border-[3px] border-dashed m-6 rounded-xl ${arMode ? 'border-red-500/50' : 'border-white/50'}`}></div>
                   <div className={`absolute top-0 left-0 w-full h-1 ${arMode ? 'bg-red-500 shadow-[0_0_20px_rgba(239,68,68,1)]' : 'bg-emerald-400/80 shadow-[0_0_15px_rgba(52,211,153,1)]'} animate-[scan_3s_ease-in-out_infinite]`}></div>
