@@ -542,7 +542,7 @@ const PCBScanDashboard = ({ onNavigate }) => {
                       onClick={(e) => { e.preventDefault(); e.stopPropagation(); captureFrame(true); }}
                       className="px-6 py-2 bg-slate-900/50 hover:bg-slate-800 border border-slate-600 text-white rounded-full backdrop-blur-md font-bold shadow-lg transition-all"
                     >
-                      📸 التقاط الصورة يدوياً
+                      📸 Capture Image Manually
                     </button>
                   </div>
 
