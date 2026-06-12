@@ -8,7 +8,7 @@ import PcbVisionRenderer from './PcbVisionRenderer';
 const PCBScanDashboard = ({ onNavigate }) => {
   const parseAiResponse = (text) => {
     if (!text || text.length < 20) return null;
-    
+
     // Updated regex to handle formats like "🔌 **Composant / Carte détecté(e) :** NANO ESP32"
     // It captures everything until the next line that contains a bold header "**" or end of string.
     const extractSection = (keywordRegex) => {
@@ -25,7 +25,7 @@ const PCBScanDashboard = ({ onNavigate }) => {
     const recommendations = extractSection('التوصيات|Recommandation|Recommendations');
 
     if (!component && !status && !defects) return null;
-    
+
     return {
       component: component || 'Non spécifié',
       function: func || '',
@@ -35,7 +35,7 @@ const PCBScanDashboard = ({ onNavigate }) => {
       recommendations: recommendations || ''
     };
   };
-  
+
   const [imageFile, setImageFile] = useState(null);
   const [imagePreview, setImagePreview] = useState(null);
   const [ocrText, setOcrText] = useState('');
@@ -55,23 +55,23 @@ const PCBScanDashboard = ({ onNavigate }) => {
   const [isExporting, setIsExporting] = useState(false);
   const [arMode, setArMode] = useState(false);
   const [yoloPredictions, setYoloPredictions] = useState(null);
-  
+
   const parsedData = parseAiResponse(aiResponse);
   const dashboardRef = useRef(null);
   const lastRecordedRef = useRef(null); // ✅ To prevent duplicate saves
-  
+
   // Update stats when analysis succeeds
   useEffect(() => {
     if (aiResponse && parsedData && !loading && !errorMsg) {
       // Create a unique identifier for this specific scan result
       const currentResultId = `${imageFile ? imageFile.name : 'Unknown'}-${processTime}`;
-      
+
       // ✅ Only record if we haven't recorded this exact result yet
       if (lastRecordedRef.current !== currentResultId) {
         lastRecordedRef.current = currentResultId;
 
         const isHealthy = parsedData.status.includes('صحيح') || parsedData.status.includes('جيد') || parsedData.status.includes('Correct');
-        
+
         // Update stats
         setScanStats(prev => {
           const newStats = {
@@ -98,13 +98,13 @@ const PCBScanDashboard = ({ onNavigate }) => {
           processTime: processTime,
           cached: isCached
         };
-        
+
         const existingHistory = JSON.parse(localStorage.getItem('pcbScanHistory') || '[]');
         localStorage.setItem('pcbScanHistory', JSON.stringify([historyItem, ...existingHistory]));
       }
     }
   }, [aiResponse, parsedData, loading, errorMsg, imageFile, yoloPredictions, processTime, isCached]); // Effect dependencies
-  
+
   const handleExportPDF = async () => {
     if (!dashboardRef.current) return;
     setIsExporting(true);
@@ -158,7 +158,7 @@ const PCBScanDashboard = ({ onNavigate }) => {
       setIsExporting(false);
     }
   };
-  
+
   // Camera states
   const [isCameraActive, setIsCameraActive] = useState(false);
   const [streamObj, setStreamObj] = useState(null);
@@ -227,18 +227,18 @@ const PCBScanDashboard = ({ onNavigate }) => {
   const startCamera = async () => {
     handleClear();
     try {
-      const stream = await navigator.mediaDevices.getUserMedia({ 
-        video: { facingMode: "environment" } 
+      const stream = await navigator.mediaDevices.getUserMedia({
+        video: { facingMode: "environment" }
       });
       setStreamObj(stream);
       setIsCameraActive(true);
-      
+
       // Initialiser la connexion WebSocket
       isProcessingRef.current = false;
       const API_URL = import.meta.env.VITE_API_URL || "http://localhost:8000";
       const wsUrl = API_URL.replace(/^http/, 'ws') + "/ws/detect-box";
       wsRef.current = new WebSocket(wsUrl);
-      
+
       wsRef.current.onmessage = (event) => {
         const data = JSON.parse(event.data);
         if (data.detected && !isProcessingRef.current) {
@@ -279,23 +279,23 @@ const PCBScanDashboard = ({ onNavigate }) => {
   // Auto-capture frame extraction and check
   const captureFrame = useCallback(async (isManual = false) => {
     if (!videoRef.current || !canvasRef.current) return;
-    
+
     const video = videoRef.current;
     const canvas = canvasRef.current;
-    
+
     const MAX_WIDTH = 800;
     const scale = Math.min(MAX_WIDTH / video.videoWidth, 1);
-    
+
     canvas.width = video.videoWidth * scale;
     canvas.height = video.videoHeight * scale;
     const ctx = canvas.getContext('2d');
     ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-    
+
     canvas.toBlob(async (blob) => {
       if (!blob) return;
-      
+
       const file = new File([blob], "camera_capture.jpg", { type: "image/jpeg" });
-      
+
       if (isManual) {
         stopCamera();
         setImageFile(file);
@@ -335,42 +335,42 @@ const PCBScanDashboard = ({ onNavigate }) => {
   // Send image to backend
   const processImage = async (fileToProcess) => {
     // Vérification asynchrone (state) ET synchrone (ref) pour bloquer le double clic instantané
-    if (loading || isProcessingRef.current) return; 
+    if (loading || isProcessingRef.current) return;
     isProcessingRef.current = true; // Verrouiller immédiatement et de façon synchrone
-    
+
     const file = fileToProcess || imageFile;
     if (!file) {
       isProcessingRef.current = false;
       return;
     }
-    
+
     setLoading(true);
     resetResults();
     setAiResponse('Traitement en cours via OpenCV et Fusion AI...');
     setOcrText('Extraction du texte...');
     const startTime = Date.now();
-    
+
     try {
       const API_URL = import.meta.env.VITE_API_URL || "http://localhost:8000";
       const formData = new FormData();
       formData.append("file", file);
-      
+
       const res = await axios.post(`${API_URL}/process-image`, formData, {
-        headers: { 
+        headers: {
           'Content-Type': 'multipart/form-data',
           'ngrok-skip-browser-warning': '69420'
         }
       });
-      
+
       const data = res.data;
       const endTime = Date.now();
       setProcessTime(((endTime - startTime) / 1000).toFixed(2));
-      
+
       if (data.error) {
-         setErrorMsg(`❌ Error: ${data.error}`);
-         setAiResponse("L'analyse a échoué.");
-         setOcrText('');
-         setOcrDetails([]);
+        setErrorMsg(`❌ Error: ${data.error}`);
+        setAiResponse("L'analyse a échoué.");
+        setOcrText('');
+        setOcrDetails([]);
       }
       if (data.status === 'success') {
         setOcrText(data.ocr_text || '');
@@ -379,7 +379,7 @@ const PCBScanDashboard = ({ onNavigate }) => {
         setYoloPredictions(data.predictions || null);
         setIsCached(data.cached || false);
       }
-      
+
     } catch (error) {
       console.error(error);
       setErrorMsg("❌ Connection failed to Backend server.");
@@ -389,20 +389,20 @@ const PCBScanDashboard = ({ onNavigate }) => {
       setLoading(false);
       // Maintenir le verrou 500ms après la fin pour éviter les clics répétitifs
       setTimeout(() => {
-        isProcessingRef.current = false; 
+        isProcessingRef.current = false;
       }, 500);
     }
   };
 
   return (
     <div className="min-h-screen bg-dot-matrix bg-[conic-gradient(at_top_right,_var(--tw-gradient-stops))] from-slate-100 via-teal-50 to-emerald-100 p-8 font-sans flex text-slate-800 selection:bg-emerald-200">
-      
+
       {/* 🌟 Premium Glassmorphism Sidebar */}
       <div className="w-72 bg-slate-900/80 backdrop-blur-2xl border border-white/10 text-white p-8 rounded-[2rem] mr-8 shadow-[0_20px_50px_rgba(8,_112,_184,_0.1)] flex flex-col relative overflow-hidden group">
         {/* Decorative background glow */}
         <div className="absolute top-0 right-0 w-48 h-48 bg-emerald-500/20 rounded-full blur-[60px] group-hover:bg-emerald-400/30 transition-colors duration-700"></div>
         <div className="absolute bottom-0 left-0 w-48 h-48 bg-teal-500/10 rounded-full blur-[60px]"></div>
-        
+
         <div className="relative z-10 flex flex-col h-full">
           <div className="flex items-center mb-10">
             <div className="w-10 h-10 bg-gradient-to-br from-emerald-400 to-teal-500 rounded-xl flex items-center justify-center shadow-lg shadow-emerald-500/30 mr-3">
@@ -421,15 +421,15 @@ const PCBScanDashboard = ({ onNavigate }) => {
             <li className="hover:text-white hover:translate-x-2 transform cursor-pointer transition-all duration-300 flex items-center">
               <span className="w-1.5 h-1.5 rounded-full bg-slate-600 mr-3"></span> 3. Deep Learning OCR
             </li>
-            
+
             <div className="h-px bg-gradient-to-r from-transparent via-slate-700 to-transparent my-6"></div>
-            
+
             <li className="text-emerald-300 font-bold flex items-center bg-white/5 p-3 rounded-xl border border-white/10 shadow-inner">
               <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 mr-3 shadow-[0_0_8px_rgba(52,211,153,0.8)]"></span>
               PCBScan Studio
             </li>
-            
-            <li 
+
+            <li
               onClick={() => onNavigate && onNavigate('history')}
               className="hover:text-white hover:bg-white/5 p-3 rounded-xl transform cursor-pointer transition-all duration-300 flex items-center mt-2 group"
             >
@@ -456,7 +456,7 @@ const PCBScanDashboard = ({ onNavigate }) => {
       <div className="flex-1 flex flex-col pt-2 relative">
         {/* Export Button */}
         <div className="flex justify-end mb-6 pr-2">
-          <button 
+          <button
             onClick={handleExportPDF}
             disabled={isExporting || (!imageFile && !parsedData)}
             className={`px-6 py-2.5 rounded-2xl font-bold text-sm shadow-sm transition-all duration-300 flex items-center ${isExporting || (!imageFile && !parsedData) ? 'bg-slate-200/50 text-slate-400 cursor-not-allowed border-transparent' : 'bg-white/80 backdrop-blur-md text-slate-700 hover:bg-white border border-slate-200 hover:border-slate-300 hover:shadow-[0_8px_30px_rgb(0,0,0,0.06)] hover:-translate-y-0.5'}`}
@@ -468,17 +468,17 @@ const PCBScanDashboard = ({ onNavigate }) => {
             )}
           </button>
         </div>
-        
+
         <div className="flex-1 grid grid-cols-12 gap-8" ref={dashboardRef}>
-          
+
           {/* Left Column: Upload / Camera & Stats */}
           <div className="col-span-4 space-y-6">
             <div className="bg-white/80 backdrop-blur-2xl p-7 rounded-[2rem] shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-white flex flex-col h-full relative overflow-hidden">
               <div className={`absolute top-0 left-0 w-full h-1 ${loading ? 'bg-gradient-to-r from-emerald-400 via-teal-400 to-emerald-400 bg-[length:200%_auto] animate-[gradient_2s_linear_infinite]' : 'bg-slate-100'}`}></div>
-              
+
               <h3 className="font-bold text-slate-800 mb-6 text-left flex justify-between items-center text-lg">
                 <span className="flex items-center gap-3">
-                  <span className="bg-slate-900 text-white w-8 h-8 rounded-xl flex items-center justify-center text-sm shadow-md">1</span> 
+                  <span className="bg-slate-900 text-white w-8 h-8 rounded-xl flex items-center justify-center text-sm shadow-md">1</span>
                   Source d'Image
                 </span>
                 {imageFile && (
@@ -496,7 +496,7 @@ const PCBScanDashboard = ({ onNavigate }) => {
                   {/* Scanning Animation Overlay */}
                   <div className={`absolute inset-0 border-[3px] border-dashed m-6 rounded-xl ${arMode ? 'border-red-500/50' : 'border-white/50'}`}></div>
                   <div className={`absolute top-0 left-0 w-full h-1 ${arMode ? 'bg-red-500 shadow-[0_0_20px_rgba(239,68,68,1)]' : 'bg-emerald-400/80 shadow-[0_0_15px_rgba(52,211,153,1)]'} animate-[scan_3s_ease-in-out_infinite]`}></div>
-                  
+
                   {arMode && (
                     <>
                       <div className="absolute top-4 left-4 w-6 h-6 border-t-4 border-l-4 border-amber-500 shadow-[0_0_10px_rgba(245,158,11,0.8)]"></div>
@@ -504,13 +504,13 @@ const PCBScanDashboard = ({ onNavigate }) => {
                       <div className="absolute bottom-4 left-4 w-6 h-6 border-b-4 border-l-4 border-amber-500 shadow-[0_0_10px_rgba(245,158,11,0.8)]"></div>
                       <div className="absolute bottom-4 right-4 w-6 h-6 border-b-4 border-r-4 border-amber-500 shadow-[0_0_10px_rgba(245,158,11,0.8)]"></div>
                       <div className="absolute top-6 right-10 text-amber-500 font-['JetBrains_Mono'] text-[10px] opacity-80 animate-pulse text-right">
-                          SYS.TARGET: ACQUIRED<br/>
-                          OFFSET: +{Math.floor(Math.random() * 100)}.{Math.floor(Math.random() * 99)}<br/>
-                          AI.CONFIDENCE: {(Math.random() * 10 + 90).toFixed(2)}%
+                        SYS.TARGET: ACQUIRED<br />
+                        OFFSET: +{Math.floor(Math.random() * 100)}.{Math.floor(Math.random() * 99)}<br />
+                        AI.CONFIDENCE: {(Math.random() * 10 + 90).toFixed(2)}%
                       </div>
                     </>
                   )}
-                  
+
                   <div className="absolute bottom-4 left-0 right-0 flex justify-center">
                     <span className={`bg-slate-900/80 backdrop-blur-md font-mono text-xs px-4 py-1.5 rounded-full border flex items-center ${arMode ? 'text-amber-400 border-amber-500/50' : 'text-emerald-300 border-emerald-500/30'}`}>
                       <span className={`w-2 h-2 rounded-full mr-2 animate-pulse ${arMode ? 'bg-amber-500' : 'bg-emerald-400'}`}></span>
@@ -528,7 +528,7 @@ const PCBScanDashboard = ({ onNavigate }) => {
               ) : (
                 <div className="mb-6">
                   <div className="grid grid-cols-2 gap-4 mb-4">
-                    <button 
+                    <button
                       onClick={startCamera}
                       className="group relative flex flex-col items-center justify-center p-5 rounded-2xl bg-gradient-to-br from-emerald-50 to-teal-50 border-2 border-dashed border-emerald-200 hover:border-emerald-400 hover:shadow-lg hover:shadow-emerald-100 transition-all duration-300"
                     >
@@ -537,12 +537,12 @@ const PCBScanDashboard = ({ onNavigate }) => {
                       </div>
                       <span className="text-sm font-bold text-emerald-700">Scanner Live</span>
                     </button>
-                    
+
                     <div className="group relative flex flex-col items-center justify-center p-5 rounded-2xl bg-white border-2 border-dashed border-slate-200 hover:border-blue-400 hover:bg-blue-50 transition-all duration-300">
-                      <input 
-                        type="file" 
-                        id="file-upload" 
-                        accept="image/*" 
+                      <input
+                        type="file"
+                        id="file-upload"
+                        accept="image/*"
                         onChange={handleImageUpload}
                         className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
                       />
@@ -552,10 +552,10 @@ const PCBScanDashboard = ({ onNavigate }) => {
                       <span className="text-sm font-bold text-slate-600 group-hover:text-blue-700 transition-colors">Upload Image</span>
                     </div>
                   </div>
-                  
+
                   {/* AR Toggle Button */}
-                  <button 
-                    onClick={() => { setArMode(!arMode); if(!isCameraActive) startCamera(); }} 
+                  <button
+                    onClick={() => { setArMode(!arMode); if (!isCameraActive) startCamera(); }}
                     className={`w-full py-3.5 rounded-2xl font-bold flex justify-center items-center transition-all duration-300 transform hover:-translate-y-1 ${arMode ? 'bg-gradient-to-r from-amber-500 to-orange-600 text-white border border-amber-400 animate-pulse-ar' : 'bg-gradient-to-r from-slate-800 to-slate-900 text-slate-200 hover:text-white shadow-xl hover:shadow-[0_0_20px_rgba(56,189,248,0.3)] border border-slate-700'}`}
                   >
                     <svg className={`w-5 h-5 mr-2 ${arMode ? 'animate-pulse' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -566,15 +566,15 @@ const PCBScanDashboard = ({ onNavigate }) => {
                   </button>
                 </div>
               )}
-              
+
               {errorMsg && (
                 <div className="bg-red-50/80 backdrop-blur-sm border border-red-200 p-4 mb-6 rounded-2xl flex items-start text-left shadow-sm">
                   <svg className="w-5 h-5 text-red-500 mt-0.5 mr-3 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
                   <p className="text-red-700 text-sm font-medium">{errorMsg}</p>
                 </div>
               )}
-              
-              <button 
+
+              <button
                 onClick={(e) => {
                   e.preventDefault();
                   if (isCameraActive) {
@@ -583,11 +583,10 @@ const PCBScanDashboard = ({ onNavigate }) => {
                     processImage();
                   }
                 }}
-                className={`relative overflow-hidden w-full py-4 rounded-2xl font-bold text-lg transition-all duration-500 flex justify-center items-center mb-8 group ${
-                  (!imageFile && !isCameraActive) || loading
-                  ? 'bg-slate-100 text-slate-400 shadow-none cursor-not-allowed border border-slate-200/60' 
+                className={`relative overflow-hidden w-full py-4 rounded-2xl font-bold text-lg transition-all duration-500 flex justify-center items-center mb-8 group ${(!imageFile && !isCameraActive) || loading
+                  ? 'bg-slate-100 text-slate-400 shadow-none cursor-not-allowed border border-slate-200/60'
                   : 'bg-slate-900 text-white hover:bg-slate-800 hover:shadow-[0_20px_40px_-15px_rgba(0,0,0,0.3)] hover:-translate-y-1'
-                }`}
+                  }`}
                 disabled={(!imageFile && !isCameraActive) || loading}
               >
                 {((imageFile || isCameraActive) && !loading) && (
@@ -605,13 +604,13 @@ const PCBScanDashboard = ({ onNavigate }) => {
                   </>
                 )}
               </button>
-              
+
               <div className="pt-4 border-t border-slate-100">
                 <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-4 flex items-center justify-center">
                   <svg className="w-3.5 h-3.5 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path></svg>
                   Statistiques de Session
                 </h4>
-                
+
                 {scanStats.healthy === 0 && scanStats.defective === 0 ? (
                   <div className="text-sm text-slate-400 italic bg-slate-50 p-4 rounded-xl border border-slate-100">Aucune donnée disponible pour cette session.</div>
                 ) : (
@@ -620,7 +619,7 @@ const PCBScanDashboard = ({ onNavigate }) => {
                       const rawHistory = JSON.parse(localStorage.getItem('pcbScanHistory') || '[]');
                       const defectCategories = { Soudure: 0, Composants: 0, Traces: 0, Alignement: 0 };
                       let hasDefects = false;
-                      
+
                       rawHistory.forEach(item => {
                         if (item.isHealthy) return;
                         hasDefects = true;
@@ -630,14 +629,14 @@ const PCBScanDashboard = ({ onNavigate }) => {
                         if (text.includes('trace') || text.includes('court') || text.includes('circuit')) defectCategories.Traces++;
                         if (text.includes('alignement') || text.includes('décalage') || text.includes('décalé')) defectCategories.Alignement++;
                       });
-                      
+
                       let barData = [
                         { name: 'Soudure', défauts: defectCategories.Soudure },
                         { name: 'Composants', défauts: defectCategories.Composants },
                         { name: 'Traces', défauts: defectCategories.Traces },
                         { name: 'Alignement', défauts: defectCategories.Alignement }
                       ].filter(d => d.défauts > 0);
-                      
+
                       if (barData.length === 0 && scanStats.defective > 0) {
                         barData.push({ name: 'Divers', défauts: scanStats.defective });
                       }
@@ -654,14 +653,14 @@ const PCBScanDashboard = ({ onNavigate }) => {
                               <div className="flex items-center text-amber-600"><span className="w-2.5 h-2.5 rounded-full bg-amber-500 mr-1.5 shadow-sm shadow-amber-500/50"></span> Défauts ({scanStats.defective})</div>
                             </div>
                           </div>
-                          
+
                           {scanStats.defective > 0 ? (
                             <ResponsiveContainer width="100%" height="100%" minHeight={150}>
                               <BarChart data={barData} margin={{ top: 10, right: 10, left: -25, bottom: 0 }}>
                                 <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
-                                <XAxis dataKey="name" tick={{fontSize: 10, fill: '#94a3b8'}} axisLine={false} tickLine={false} />
-                                <YAxis tick={{fontSize: 10, fill: '#94a3b8'}} axisLine={false} tickLine={false} allowDecimals={false} />
-                                <Tooltip cursor={{fill: 'rgba(245, 158, 11, 0.05)'}} contentStyle={{ borderRadius: '12px', border: '1px solid #f1f5f9', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)', fontFamily: 'JetBrains Mono' }} />
+                                <XAxis dataKey="name" tick={{ fontSize: 10, fill: '#94a3b8' }} axisLine={false} tickLine={false} />
+                                <YAxis tick={{ fontSize: 10, fill: '#94a3b8' }} axisLine={false} tickLine={false} allowDecimals={false} />
+                                <Tooltip cursor={{ fill: 'rgba(245, 158, 11, 0.05)' }} contentStyle={{ borderRadius: '12px', border: '1px solid #f1f5f9', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)', fontFamily: 'JetBrains Mono' }} />
                                 <Bar dataKey="défauts" fill="#f59e0b" radius={[4, 4, 0, 0]} />
                               </BarChart>
                             </ResponsiveContainer>
@@ -682,10 +681,10 @@ const PCBScanDashboard = ({ onNavigate }) => {
 
           {/* Right Column: Previews & Results */}
           <div className="col-span-8 flex flex-col space-y-6">
-            
+
             {/* Top Row: Vision & Metadata */}
             <div className="grid grid-cols-5 gap-6">
-              
+
               {/* Visual Inspection (YOLO) Card - Spans 3 cols */}
               <div className="col-span-3 bg-white/80 backdrop-blur-2xl p-6 rounded-[2rem] shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-white flex flex-col group min-h-[380px]">
                 <div className="flex justify-between items-center mb-4">
@@ -697,7 +696,7 @@ const PCBScanDashboard = ({ onNavigate }) => {
                   </span>
                   {imageFile && <span className="bg-emerald-100 text-emerald-700 font-bold px-2.5 py-1 rounded-lg text-xs">{(imageFile.size / 1024 / 1024).toFixed(2)} MB</span>}
                 </div>
-                <div 
+                <div
                   className="flex-1 bg-gradient-to-b from-slate-50 to-slate-100 rounded-2xl flex items-center justify-center overflow-hidden border border-slate-200/50 shadow-inner relative group cursor-pointer"
                   onClick={() => setIsZoomed(!isZoomed)}
                   style={{ perspective: arMode ? '1000px' : 'none' }}
@@ -705,7 +704,7 @@ const PCBScanDashboard = ({ onNavigate }) => {
                   {imagePreview ? (
                     <div className={`relative w-full h-full transition-all duration-700 origin-center flex items-center justify-center ${isZoomed ? 'scale-[2] z-50 cursor-zoom-out' : 'cursor-zoom-in'} ${arMode && !isZoomed ? 'ar-hud-image' : ''}`}>
                       {yoloPredictions && yoloPredictions.length > 0 ? (
-                        <PcbVisionRenderer 
+                        <PcbVisionRenderer
                           imageUrl={imagePreview}
                           predictions={yoloPredictions}
                         />
@@ -715,20 +714,20 @@ const PCBScanDashboard = ({ onNavigate }) => {
                           {/* SVG Bounding Boxes Overlay */}
                           {ocrDetails && ocrDetails.length > 0 && imageSize && (
                             <svg className="absolute inset-0 w-full h-full p-2 pointer-events-none" viewBox={`0 0 ${imageSize.width} ${imageSize.height}`} preserveAspectRatio="xMidYMid meet">
-                               {ocrDetails.map((det, i) => {
-                                  const [tl, tr, br, bl] = det.bbox;
-                                  const pts = `${tl[0]},${tl[1]} ${tr[0]},${tr[1]} ${br[0]},${br[1]} ${bl[0]},${bl[1]}`;
-                                  const isLowConfidence = det.prob < 0.6;
-                                  const color = isLowConfidence ? '#f59e0b' : (arMode ? '#0ea5e9' : '#10b981');
-                                  return (
-                                     <g key={i}>
-                                        <polygon points={pts} fill={color} fillOpacity={arMode ? "0.2" : "0.1"} stroke={color} strokeWidth={arMode ? "4" : "3"} className={arMode ? "ar-neon-polygon" : "drop-shadow-md"} />
-                                        <text x={tl[0]} y={tl[1] - 5} fill={color} fontSize="16" fontWeight="bold" className="drop-shadow-md" style={{ textShadow: arMode ? `0 0 10px ${color}` : '1px 1px 2px black' }}>
-                                          {det.text}
-                                        </text>
-                                     </g>
-                                  );
-                               })}
+                              {ocrDetails.map((det, i) => {
+                                const [tl, tr, br, bl] = det.bbox;
+                                const pts = `${tl[0]},${tl[1]} ${tr[0]},${tr[1]} ${br[0]},${br[1]} ${bl[0]},${bl[1]}`;
+                                const isLowConfidence = det.prob < 0.6;
+                                const color = isLowConfidence ? '#f59e0b' : (arMode ? '#0ea5e9' : '#10b981');
+                                return (
+                                  <g key={i}>
+                                    <polygon points={pts} fill={color} fillOpacity={arMode ? "0.2" : "0.1"} stroke={color} strokeWidth={arMode ? "4" : "3"} className={arMode ? "ar-neon-polygon" : "drop-shadow-md"} />
+                                    <text x={tl[0]} y={tl[1] - 5} fill={color} fontSize="16" fontWeight="bold" className="drop-shadow-md" style={{ textShadow: arMode ? `0 0 10px ${color}` : '1px 1px 2px black' }}>
+                                      {det.text}
+                                    </text>
+                                  </g>
+                                );
+                              })}
                             </svg>
                           )}
                         </>
@@ -744,7 +743,7 @@ const PCBScanDashboard = ({ onNavigate }) => {
                   )}
                 </div>
               </div>
-            {/* OCR Metadata Card - Spans 2 cols */}
+              {/* OCR Metadata Card - Spans 2 cols */}
               <div className="col-span-2 bg-white/80 backdrop-blur-2xl p-6 rounded-[2rem] shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-white flex flex-col min-h-[380px]">
                 <div className="flex justify-between items-center mb-4">
                   <h3 className="font-bold text-slate-800 flex items-center text-sm">
@@ -763,7 +762,7 @@ const PCBScanDashboard = ({ onNavigate }) => {
                     </button>
                   )}
                 </div>
-                
+
                 <div className="bg-slate-50/50 p-5 rounded-2xl flex-1 border border-slate-200/40 overflow-y-auto shadow-inner relative">
                   {loading ? (
                     <div className="animate-pulse flex flex-col space-y-3">
@@ -775,9 +774,9 @@ const PCBScanDashboard = ({ onNavigate }) => {
                   ) : (ocrDetails && ocrDetails.length > 0 ? (
                     <div className="text-xs font-['JetBrains_Mono'] leading-loose">
                       {ocrDetails.map((det, i) => (
-                         <span key={i} className={`mr-2 px-1 rounded inline-block ${det.prob < 0.6 ? 'bg-amber-100 text-amber-700 underline decoration-amber-400 decoration-wavy' : 'text-slate-700'}`} title={`Confiance: ${(det.prob * 100).toFixed(0)}%`}>
-                           {det.text}
-                         </span>
+                        <span key={i} className={`mr-2 px-1 rounded inline-block ${det.prob < 0.6 ? 'bg-amber-100 text-amber-700 underline decoration-amber-400 decoration-wavy' : 'text-slate-700'}`} title={`Confiance: ${(det.prob * 100).toFixed(0)}%`}>
+                          {det.text}
+                        </span>
                       ))}
                     </div>
                   ) : (
@@ -793,7 +792,7 @@ const PCBScanDashboard = ({ onNavigate }) => {
             <div className="bg-white/80 backdrop-blur-2xl p-7 rounded-[2rem] shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-white flex flex-col relative overflow-hidden flex-1">
               {/* Magic glow effect in corner */}
               <div className="absolute -top-10 -right-10 w-48 h-48 bg-purple-400/5 blur-[50px] rounded-full pointer-events-none"></div>
-              
+
               <div className="flex justify-between items-center mb-6 relative z-10">
                 <h3 className="font-bold text-slate-800 flex items-center text-lg">
                   <div className="bg-gradient-to-br from-purple-500 to-indigo-600 text-white w-10 h-10 rounded-xl flex items-center justify-center mr-4 shadow-lg shadow-purple-500/30">
@@ -803,11 +802,10 @@ const PCBScanDashboard = ({ onNavigate }) => {
                 </h3>
               </div>
 
-              <div className={`p-6 flex-1 rounded-[1.5rem] border transition-all duration-500 overflow-y-auto max-h-[400px] shadow-sm relative z-10 ${
-                aiResponse && !loading && !errorMsg 
-                ? (isCached ? 'bg-gradient-to-br from-yellow-50/50 to-amber-50/50 border-yellow-200/50' : 'bg-gradient-to-br from-slate-50 to-white border-slate-200') 
+              <div className={`p-6 flex-1 rounded-[1.5rem] border transition-all duration-500 overflow-y-auto max-h-[400px] shadow-sm relative z-10 ${aiResponse && !loading && !errorMsg
+                ? (isCached ? 'bg-gradient-to-br from-yellow-50/50 to-amber-50/50 border-yellow-200/50' : 'bg-gradient-to-br from-slate-50 to-white border-slate-200')
                 : 'bg-slate-50/50 border-transparent'
-              }`}>
+                }`}>
                 {loading ? (
                   <div className="flex flex-col items-center justify-center h-full text-purple-500/60">
                     <div className="relative mb-4">
@@ -829,13 +827,13 @@ const PCBScanDashboard = ({ onNavigate }) => {
                           <p className="font-semibold text-sm">{parsedData.status}</p>
                         </div>
                       </div>
-                      
+
                       {/* Component & Function */}
                       <div className="bg-white/50 p-3 rounded-xl border border-slate-200/60 shadow-sm">
                         <p className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Composant & Fonction</p>
                         <p className="text-sm text-slate-700 font-medium"><span className="text-blue-600 font-bold">{parsedData.component}</span> - {parsedData.function}</p>
                       </div>
-                      
+
                       {/* Defects and Anomalies */}
                       {(parsedData.defects || parsedData.anomalies) && (
                         <div className="bg-amber-50/50 p-4 rounded-xl border border-amber-100 text-amber-800 shadow-sm">
@@ -856,7 +854,7 @@ const PCBScanDashboard = ({ onNavigate }) => {
                           )}
                         </div>
                       )}
-                      
+
                       {/* Recommendations */}
                       {parsedData.recommendations && (
                         <div className="bg-blue-50/50 p-4 rounded-xl border border-blue-100 text-blue-800 shadow-sm mt-4">

@@ -57,9 +57,8 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-print("Initializing EasyOCR models (this might take a few seconds on first startup)...")
-reader = easyocr.Reader(['fr', 'en'])
-print("EasyOCR initialized!")
+print("Bypassing EasyOCR initialization to save RAM on Raspberry Pi...")
+reader = None
 
 FUSION_WEBHOOK_URL = "https://fusion-ai-api.medifus.dev/webhooks/webhook-f6425935-82ac-4d34-a7b0-9735d8cda314/process-image"
 CACHE_FILE = "cache.json"
@@ -154,8 +153,10 @@ async def process_image(file: UploadFile = File(...)):
         print("[1] Processing image and detecting text using EasyOCR (Horizontal & Vertical)...")
         ocr_details = []
         
-        # 1. Normal OCR
-        result_h = reader.readtext(temp_file_path, detail=1, paragraph=False)
+        if reader:
+            result_h = reader.readtext(temp_file_path, detail=1, paragraph=False)
+        else:
+            result_h = []
         text_h_parts = []
         for bbox, text, prob in result_h:
             text_h_parts.append(text)
@@ -177,7 +178,10 @@ async def process_image(file: UploadFile = File(...)):
             rotated_path = f"rotated_{temp_file_path}"
             cv2.imwrite(rotated_path, rotated)
             
-            result_v = reader.readtext(rotated_path, detail=1, paragraph=False)
+            if reader:
+                result_v = reader.readtext(rotated_path, detail=1, paragraph=False)
+            else:
+                result_v = []
             text_v_parts = []
             for bbox, text, prob in result_v:
                 text_v_parts.append(text)
@@ -455,6 +459,11 @@ async def process_image(file: UploadFile = File(...)):
     finally:
         if os.path.exists(temp_file_path):
             os.remove(temp_file_path)
+
+import os
+from fastapi.staticfiles import StaticFiles
+if os.path.exists("dist"):
+    app.mount("/", StaticFiles(directory="dist", html=True), name="frontend")
 
 if __name__ == "__main__":
     import uvicorn
