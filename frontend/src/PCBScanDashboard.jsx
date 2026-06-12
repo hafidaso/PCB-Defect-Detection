@@ -536,6 +536,15 @@ const PCBScanDashboard = ({ onNavigate }) => {
                   {/* Scanning Animation Overlay */}
                   <div className={`absolute inset-0 border-[3px] border-dashed m-6 rounded-xl ${arMode ? 'border-red-500/50' : 'border-white/50'}`}></div>
                   <div className={`absolute top-0 left-0 w-full h-1 ${arMode ? 'bg-red-500 shadow-[0_0_20px_rgba(239,68,68,1)]' : 'bg-emerald-400/80 shadow-[0_0_15px_rgba(52,211,153,1)]'} animate-[scan_3s_ease-in-out_infinite]`}></div>
+                  {/* Manual Capture Button fallback */}
+                  <div className="absolute bottom-4 left-0 right-0 flex justify-center z-30">
+                    <button 
+                      onClick={(e) => { e.preventDefault(); e.stopPropagation(); captureFrame(true); }}
+                      className="px-6 py-2 bg-slate-900/50 hover:bg-slate-800 border border-slate-600 text-white rounded-full backdrop-blur-md font-bold shadow-lg transition-all"
+                    >
+                      📸 التقاط الصورة يدوياً
+                    </button>
+                  </div>
 
                   {arMode && (
                     <>
