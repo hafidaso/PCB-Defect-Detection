@@ -117,31 +117,41 @@ const PCBScanDashboard = ({ onNavigate }) => {
         logging: false,
         backgroundColor: '#f8fafc',
         onclone: (clonedDoc) => {
-          // Walk every element in the cloned document and replace unsupported color functions
-          const allEls = clonedDoc.querySelectorAll('*');
-          const oklchRegex = /oklch\([^)]*\)/g;
-          const safeColorMap = {
-            // Map known tailwind oklch shades -> safe hex
-            emerald: '#10b981', teal: '#14b8a6', slate: '#64748b',
-            red: '#ef4444', blue: '#3b82f6', purple: '#a855f7',
-            yellow: '#eab308', amber: '#f59e0b', orange: '#f97316',
-          };
-          allEls.forEach((el) => {
-            const style = el.style;
-            ['color', 'backgroundColor', 'borderColor', 'boxShadow'].forEach((prop) => {
-              if (style[prop] && oklchRegex.test(style[prop])) {
-                style[prop] = '#64748b'; // fallback slate
+          try {
+            // Walk every element in the cloned document and replace unsupported color functions
+            const allEls = clonedDoc.querySelectorAll('*');
+            const oklchRegex = /oklch\([^)]*\)/g;
+            const safeColorMap = {
+              // Map known tailwind oklch shades -> safe hex
+              emerald: '#10b981', teal: '#14b8a6', slate: '#64748b',
+              red: '#ef4444', blue: '#3b82f6', purple: '#a855f7',
+              yellow: '#eab308', amber: '#f59e0b', orange: '#f97316',
+            };
+            allEls.forEach((el) => {
+              const style = el.style;
+              if (style) {
+                ['color', 'backgroundColor', 'borderColor', 'boxShadow'].forEach((prop) => {
+                  if (style[prop] && oklchRegex.test(style[prop])) {
+                    style[prop] = '#64748b'; // fallback slate
+                  }
+                });
+              }
+              // Also fix computed background via class scan
+              if (clonedDoc.defaultView) {
+                const computed = clonedDoc.defaultView.getComputedStyle(el);
+                if (computed) {
+                  ['backgroundColor', 'borderColor'].forEach((prop) => {
+                    const val = computed[prop];
+                    if (val && val.includes('oklch')) {
+                      el.style[prop] = '#f1f5f9';
+                    }
+                  });
+                }
               }
             });
-            // Also fix computed background via class scan
-            const computed = window.getComputedStyle(el);
-            ['backgroundColor', 'borderColor'].forEach((prop) => {
-              const val = computed[prop];
-              if (val && val.includes('oklch')) {
-                el.style[prop] = '#f1f5f9';
-              }
-            });
-          });
+          } catch (e) {
+            console.warn("PDF onclone fix failed, continuing without color fallback:", e);
+          }
         }
       });
       const imgData = canvas.toDataURL('image/jpeg', 0.92);

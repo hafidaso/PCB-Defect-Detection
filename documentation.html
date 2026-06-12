@@ -38,6 +38,10 @@
                 page-break-inside: avoid;
             }
 
+            * {
+                box-shadow: none !important;
+            }
+
             pre,
             code,
             .rounded-xl {
@@ -54,11 +58,6 @@
             img {
                 max-width: 100% !important;
                 page-break-inside: avoid !important;
-            }
-
-            .shadow-lg,
-            .shadow-md {
-                box-shadow: none !important;
             }
 
             .text-transparent {
@@ -82,7 +81,7 @@
             </div>
             <h1
                 class="text-5xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-emerald-600 to-teal-600 mb-4 tracking-tight">
-                PCBScan Studio</h1>
+                PCBScan</h1>
             <p class="text-xl text-slate-500 max-w-2xl mx-auto">Documentation du système intelligent de contrôle qualité et de détection de défauts sur circuits imprimés (PCB).</p>
 
             <div
@@ -90,14 +89,60 @@
                 <span>Créé par</span>
                 <span
                     class="text-transparent bg-clip-text bg-gradient-to-r from-emerald-500 to-teal-500 font-bold ml-1 text-base">Hafida
-                    Belayd</span>
+                    Belayd & Saad M'sakra</span>
             </div>
         </header>
 
-        <!-- Dashboard Screenshot -->
-        <div class="mb-12 rounded-2xl overflow-hidden shadow-xl shadow-emerald-900/5 border border-slate-200">
-            <img src="dashboard_screenshot.jpg" alt="PCBScan Dashboard Overview"
-                class="w-full object-cover hover:scale-[1.01] transition-transform duration-700">
+        <!-- Dashboard Screenshots -->
+        <div class="mb-12 space-y-8">
+            <div class="rounded-2xl overflow-hidden shadow-xl shadow-emerald-900/5 border border-slate-200">
+                <img src="dashboard_screenshot_new.jpg" alt="PCBScan Dashboard Overview"
+                    class="w-full object-cover hover:scale-[1.01] transition-transform duration-700">
+            </div>
+            
+            <div class="rounded-2xl overflow-hidden shadow-xl shadow-slate-900/5 border border-slate-200">
+                <div class="bg-slate-50 border-b border-slate-200 px-4 py-3">
+                    <h3 class="text-sm font-semibold text-slate-700 flex items-center">
+                        <svg class="w-4 h-4 mr-2 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                        Historique des Analyses
+                    </h3>
+                </div>
+                <img src="history_screenshot.jpg" alt="Historique des Analyses PCB"
+                    class="w-full object-cover hover:scale-[1.01] transition-transform duration-700">
+            </div>
+
+            <div class="rounded-2xl overflow-hidden shadow-xl shadow-slate-900/5 border border-slate-200">
+                <div class="bg-slate-50 border-b border-slate-200 px-4 py-3">
+                    <h3 class="text-sm font-semibold text-slate-700 flex items-center">
+                        <svg class="w-4 h-4 mr-2 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
+                        Détails de l'Inspection (Fusion AI)
+                    </h3>
+                </div>
+                <img src="details_screenshot.jpg" alt="Détails de l'Inspection PCB"
+                    class="w-full object-cover hover:scale-[1.01] transition-transform duration-700">
+            </div>
+
+            <div class="rounded-2xl overflow-hidden shadow-xl shadow-rose-900/5 border border-slate-200">
+                <div class="bg-slate-50 border-b border-slate-200 px-4 py-3">
+                    <h3 class="text-sm font-semibold text-slate-700 flex items-center">
+                        <svg class="w-4 h-4 mr-2 text-rose-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path></svg>
+                        Résultat de l'Analyse Visuelle (YOLOv11) - Exemple 1
+                    </h3>
+                </div>
+                <img src="yolo_analysis_1.png" alt="YOLO Analysis Result 1"
+                    class="w-full object-cover hover:scale-[1.01] transition-transform duration-700">
+            </div>
+
+            <div class="rounded-2xl overflow-hidden shadow-xl shadow-rose-900/5 border border-slate-200">
+                <div class="bg-slate-50 border-b border-slate-200 px-4 py-3">
+                    <h3 class="text-sm font-semibold text-slate-700 flex items-center">
+                        <svg class="w-4 h-4 mr-2 text-rose-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path></svg>
+                        Résultat de l'Analyse Visuelle (YOLOv11) - Exemple 2
+                    </h3>
+                </div>
+                <img src="yolo_analysis_2.png" alt="YOLO Analysis Result 2"
+                    class="w-full object-cover hover:scale-[1.01] transition-transform duration-700">
+            </div>
         </div>
 
         <!-- Architecture -->
@@ -140,10 +185,11 @@
                 <div class="relative">
                     <span
                         class="absolute -left-[41px] bg-blue-500 text-white w-8 h-8 rounded-full flex items-center justify-center font-bold shadow-md">1</span>
-                    <h3 class="font-bold text-slate-800 text-lg">Activation de la Caméra</h3>
-                    <p class="text-sm text-slate-600 mt-1">L'utilisateur autorise l'accès à sa caméra (via
-                        <code>navigator.mediaDevices</code>). Le flux vidéo s'affiche en direct avec une animation de
-                        scanner "laser".
+                    <h3 class="font-bold text-slate-800 text-lg">Acquisition de l'Image (Deux Modes)</h3>
+                    <p class="text-sm text-slate-600 mt-1">
+                        L'utilisateur dispose de deux méthodes d'inspection :<br>
+                        <strong>- Mode "Upload File" :</strong> Permet d'importer manuellement une photo haute définition (JPG, PNG) depuis son ordinateur.<br>
+                        <strong>- Mode "Scanner Live" :</strong> L'utilisateur autorise l'accès à sa caméra (via <code>navigator.mediaDevices</code>). Le flux vidéo s'affiche en direct avec une animation de scanner "laser".
                     </p>
                 </div>
 
@@ -170,6 +216,23 @@
                     <h3 class="font-bold text-slate-800 text-lg">Synthèse et Affichage</h3>
                     <p class="text-sm text-slate-600 mt-1">Si le PCB est connu, le résultat s'affiche instantanément avec le badge <strong>CACHE HIT ⚡</strong>. Sinon, un Agent IA (Fusion AI) compile les données OCR et YOLO pour rédiger un rapport qualité complet, directement affiché dans le dashboard.</p>
                 </div>
+            </div>
+
+            <!-- AR Mode Spotlight -->
+            <div class="mt-10 bg-gradient-to-r from-slate-900 to-indigo-950 rounded-2xl p-6 border border-indigo-500/30 shadow-2xl relative overflow-hidden" style="page-break-before: always; break-before: page; page-break-inside: avoid;">
+                <div class="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] opacity-10 mix-blend-overlay"></div>
+                <h3 class="text-xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-blue-500 mb-3 flex items-center relative z-10">
+                    <span class="text-2xl mr-3">🥽</span>
+                    Focus UX : Le Mode AR (Réalité Augmentée)
+                </h3>
+                <p class="text-slate-300 text-sm leading-relaxed relative z-10 mb-4">
+                    Le Dashboard intègre un bouton <strong>"Activer Mode AR (Simulation)"</strong> qui transforme radicalement l'expérience utilisateur pour simuler la vue d'un opérateur équipé de lunettes connectées sur ligne d'assemblage :
+                </p>
+                <ul class="text-slate-400 text-sm space-y-2 relative z-10 list-disc list-inside">
+                    <li><strong>Scanner HUD :</strong> La caméra passe en mode rouge laser avec la mention <code>AR HUD TRACKING...</code>.</li>
+                    <li><strong>Effet 3D (Perspective) :</strong> L'image analysée subit une transformation CSS 3D pour simuler un affichage holographique flottant.</li>
+                    <li><strong>Bounding Boxes Néon :</strong> Les défauts sont mis en évidence avec des polygones SVG bleus néons éclatants et des ombres portées lumineuses.</li>
+                </ul>
             </div>
         </section>
 
@@ -261,6 +324,23 @@ ai_result = re.sub(r'^\d{1,2}/\d{1,2}/\d{4},\s*\d{1,2}:\d{2}:\d{2}\s*(AM|PM)$', 
 ai_result = re.sub(r'^Node ID:\s*[a-f0-9\-]+$', '', ai_result, flags=re.MULTILINE)
 </code></pre>
             </div>
+        <!-- Detail 5: Embedded Optimizations -->
+            <h3 class="text-lg font-bold text-slate-700 mb-2">5. Optimisation Embarquée (Raspberry Pi & All-in-One)</h3>
+            <p class="text-sm text-slate-500 mb-3">Pour fonctionner sur une carte embarquée avec peu de RAM (ex: Raspberry Pi <code>aptivA133</code>), l'extraction OCR lourde a été bypassée. De plus, FastAPI sert directement les fichiers statiques du Frontend React compilés (<code>dist/</code>), transformant la carte en un <strong>serveur autonome "Tout-en-un"</strong>.</p>
+            <div class="rounded-xl overflow-hidden mb-6 shadow-md text-sm border border-slate-200">
+                <pre><code class="language-python"># Bypass de EasyOCR pour économiser la RAM de la carte
+print("Bypassing EasyOCR initialization to save RAM on Raspberry Pi...")
+reader = None
+
+# ...
+
+# Serveur All-in-One : FastAPI héberge l'API ET le Frontend React
+import os
+from fastapi.staticfiles import StaticFiles
+if os.path.exists("dist"):
+    app.mount("/", StaticFiles(directory="dist", html=True), name="frontend")
+</code></pre>
+            </div>
         </section>
 
         <!-- Fusion AI Workflow Explanation -->
@@ -319,9 +399,99 @@ Règles strictes :
             </div>
         </section>
 
+        <!-- IoT Hardware Integration Explanation -->
+        <section class="glass-card rounded-3xl p-8 mb-10 transition hover:shadow-xl duration-300">
+            <h2 class="text-2xl font-bold text-slate-800 mb-6 flex items-center">
+                <span class="bg-orange-100 text-orange-600 p-2 rounded-lg mr-4">🔌</span>
+                Intégration Matérielle IoT (ESP32)
+            </h2>
+            <p class="text-slate-600 leading-relaxed mb-6">Le système ne se contente pas d'un tableau de bord virtuel. Il agit dans le monde physique grâce à un microcontrôleur <strong>ESP32</strong> (programmé en C++) connecté au cloud via le protocole MQTT.</p>
+
+            <div class="relative pl-8 border-l-2 border-orange-300 space-y-8 mt-8">
+                <!-- Step 1 -->
+                <div class="relative">
+                    <span class="absolute -left-[41px] bg-orange-500 text-white w-8 h-8 rounded-full flex items-center justify-center font-bold shadow-md">1</span>
+                    <h3 class="font-bold text-slate-800 text-lg">Communication Sécurisée MQTT (HiveMQ Cloud)</h3>
+                    <p class="text-sm text-slate-600 mt-1">Le backend Python et l'ESP32 sont connectés au même broker MQTT sécurisé. Dès que l'analyse d'image est terminée, le serveur backend publie instantanément le message <code>DEFECT</code> ou <code>OK</code> sur le topic <code>hafida/robot/twin/command</code>.</p>
+                </div>
+
+                <!-- Step 2 -->
+                <div class="relative">
+                    <span class="absolute -left-[41px] bg-orange-500 text-white w-8 h-8 rounded-full flex items-center justify-center font-bold shadow-md">2</span>
+                    <h3 class="font-bold text-slate-800 text-lg">Réaction Physique en Temps Réel</h3>
+                    <p class="text-sm text-slate-600 mt-1">L'ESP32 écoute ce topic en permanence. À la réception du message <code>DEFECT</code>, il déclenche le système d'alarme sur la ligne de production :</p>
+                    <ul class="list-disc list-inside text-sm text-slate-600 mt-2 space-y-1">
+                        <li><strong>Alerte Visuelle :</strong> Allumage immédiat d'une LED rouge de signalisation.</li>
+                        <li><strong>Alerte Sonore :</strong> Activation d'un buzzer.</li>
+                        <li><strong>Écran LCD I2C :</strong> Affichage de <code>"PCB DEFECT! Check Board"</code> ou de <code>"PCB OK"</code> pour informer l'opérateur local.</li>
+                    </ul>
+                </div>
+            </div>
+
+            <!-- C++ Code Snippets -->
+            <div class="mt-12">
+                <h3 class="text-xl font-bold text-slate-800 mb-6 flex items-center">
+                    <span class="bg-orange-100 text-orange-600 p-2 rounded-lg mr-4">&lt;/&gt;</span>
+                    Analyse du Code C++ (ESP32)
+                </h3>
+                <p class="text-slate-600 mb-6">Le fichier <code>main.cpp</code> gère la connexion Wi-Fi, la souscription MQTT et l'activation des actionneurs physiques. Voici les extraits les plus importants :</p>
+
+                <!-- C++ Snippet 1 -->
+                <h4 class="text-md font-bold text-slate-700 mb-2">1. Réception des Commandes (MQTT Callback)</h4>
+                <p class="text-sm text-slate-500 mb-3">Cette fonction est le "cerveau" de la carte. Elle est déclenchée automatiquement à chaque fois que le serveur Python publie un résultat (DEFECT ou OK).</p>
+                <div class="rounded-xl overflow-hidden mb-6 shadow-md text-sm border border-slate-200">
+                    <pre><code class="language-cpp">// Fonction appelée à la réception d'un message MQTT
+void mqttCallback(char *topic, byte *payload, unsigned int length) {
+  String message = "";
+  for (unsigned int i = 0; i < length; i++) {
+    message += (char)payload[i];
+  }
+
+  // Bascule l'état de la machine selon le diagnostic de l'IA
+  if (message == "DEFECT") {
+    defectDetected = true;
+  } else if (message == "OK") {
+    defectDetected = false;
+  }
+}</code></pre>
+                </div>
+
+                <!-- C++ Snippet 2 -->
+                <h4 class="text-md font-bold text-slate-700 mb-2">2. Déclenchement des Alertes Physiques</h4>
+                <p class="text-sm text-slate-500 mb-3">La boucle principale (<code>loop</code>) surveille la variable <code>defectDetected</code>. Si un défaut est signalé, elle active la LED, le buzzer et met à jour l'écran LCD de manière asynchrone.</p>
+                <div class="rounded-xl overflow-hidden mb-6 shadow-md text-sm border border-slate-200">
+                    <pre><code class="language-cpp">void loop() {
+  mqttClient.loop(); // Maintient la connexion MQTT en vie
+
+  // Affichage et alertes
+  if (defectDetected) {
+    digitalWrite(ledPin, HIGH);   // Allume la LED rouge
+    tone(buzzerPin, 1000);        // Active le buzzer à 1000Hz
+
+    lcd.clear();
+    lcd.setCursor(0, 0);
+    lcd.print("PCB DEFECT!");     // Alerte visuelle sur l'écran LCD
+    lcd.setCursor(0, 1);
+    lcd.print("Check Board");
+  } else {
+    digitalWrite(ledPin, LOW);    // Éteint la LED
+    noTone(buzzerPin);            // Coupe le buzzer
+
+    lcd.clear();
+    lcd.setCursor(0, 0);
+    lcd.print("PCB OK");          // Confirme que la carte est saine
+    lcd.setCursor(0, 1);
+    lcd.print("No Defects");
+  }
+  delay(500);
+}</code></pre>
+                </div>
+            </div>
+        </section>
+
         <!-- Footer -->
         <footer class="text-center text-slate-400 text-sm mt-12 pb-8">
-            <p>&copy; 2026 PCBScan Studio. Tous droits réservés.</p>
+            <p>&copy; 2026 PCBScan. Tous droits réservés.</p>
             <p class="mt-2">Développé avec la pile technique React, Tailwind, YOLOv11 & Python FastAPI.</p>
         </footer>
     </div>

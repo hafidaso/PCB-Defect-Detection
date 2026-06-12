@@ -57,8 +57,8 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-print("Bypassing EasyOCR initialization to save RAM on Raspberry Pi...")
-reader = None
+print("Initializing EasyOCR...")
+reader = easyocr.Reader(['en', 'fr'], gpu=False)
 
 FUSION_WEBHOOK_URL = "https://fusion-ai-api.medifus.dev/webhooks/webhook-f6425935-82ac-4d34-a7b0-9735d8cda314/process-image"
 CACHE_FILE = "cache.json"
