@@ -356,7 +356,10 @@ const PCBScanDashboard = ({ onNavigate }) => {
       formData.append("file", file);
       
       const res = await axios.post(`${API_URL}/process-image`, formData, {
-        headers: { 'Content-Type': 'multipart/form-data' }
+        headers: { 
+          'Content-Type': 'multipart/form-data',
+          'ngrok-skip-browser-warning': '69420'
+        }
       });
       
       const data = res.data;
